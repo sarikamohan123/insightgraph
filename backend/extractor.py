@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import List, Tuple
 
-from schemas import Node, Edge, ExtractResponse
+from backend.schemas import Node, Edge, ExtractResponse
 
 
 # A tiny "dictionary" of concepts we recognize for now.
@@ -42,7 +42,14 @@ def _find_known_nodes(text: str) -> List[Node]:
         if term in norm:
             label, node_type = KNOWN_TERMS[term]
             node_id = term.replace(" ", "-")
-            nodes.append(Node(id=node_id, label=label, type=node_type, confidence=0.8))
+
+            count = norm.count(term)
+            if count == 1:
+                confidence = 0.6
+            else:
+                confidence = 0.9
+
+            nodes.append(Node(id=node_id, label=label, type=node_type, confidence=confidence))
 
     # Deduplicate by id (in case of overlaps)
     unique = {}
@@ -115,3 +122,7 @@ def extract_graph(text: str) -> ExtractResponse:
     nodes = _find_known_nodes(text)
     edges = _make_edges(text, nodes)
     return ExtractResponse(nodes=nodes, edges=edges)
+
+
+
+
