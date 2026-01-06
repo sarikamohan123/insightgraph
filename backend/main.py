@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from schemas import Node, Edge, ExtractResponse
+from extractor import extract_graph
+
 app = FastAPI(title="InsightGraph API")
 
 
@@ -13,14 +16,8 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/extract")
+@app.post("/extract", response_model=ExtractResponse)
 def extract(req: ExtractRequest):
-    return {
-        "nodes": [
-            {"id": "python", "label": "Python", "type": "Tech"},
-            {"id": "data-science", "label": "Data Science", "type": "Concept"},
-        ],
-        "edges": [
-            {"source": "python", "target": "data-science", "relation": "used_for"}
-        ],
-    }
+    return extract_graph(req.text)
+
+    
