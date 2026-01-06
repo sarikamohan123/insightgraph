@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Redis - In-memory data store for rate limiting (Phase 2)
+  redis:
+    image: redis:7-alpine  # Lightweight Redis version
+    container_name: insightgraph-redis
+    ports:
+      - "6379:6379"  # Expose Redis on default port
+    restart: unless-stopped  # Auto-restart if crashes
+    command: redis-server --appendonly yes  # Enable persistence
+    volumes:
+      - redis_data:/data  # Persist data across restarts
+
+  # PostgreSQL - Main database for storing knowledge graphs (Phase 3)
+  postgres:
+    image: postgres:16-alpine  # Latest stable PostgreSQL
+    container_name: insightgraph-postgres
+    environment:
+      POSTGRES_DB: insightgraph       # Database name
+      POSTGRES_USER: dev              # Username
+      POSTGRES_PASSWORD: devpass      # Password (change in production!)
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"  # Unicode support
+    ports:
+      - "5432:5432"  # Expose PostgreSQL on default port
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Persist database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dev -d insightgraph"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# Named volumes for data persistence
+volumes:
+  redis_data:
+    driver: local
+  postgres_data:
+    driver: local
