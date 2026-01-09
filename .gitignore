@@ -4,6 +4,14 @@ __pycache__/
 .venv/
 .env
 
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
 # OS
 .DS_Store
 Thumbs.db

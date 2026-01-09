@@ -20,9 +20,60 @@
 
 ---
 
-## Current Status: Phase 1 - LLM Integration ✅ COMPLETED!
+## Current Status: Phase 1.5 - Testing & Infrastructure ✅ COMPLETED!
 
-**Last Updated:** 2026-01-06 (Evening)
+**Last Updated:** 2026-01-08 (Evening)
+
+### ✅ Completed (Phase 1.5 - Testing & Infrastructure)
+**Completion Date:** 2026-01-08
+
+Phase 1.5 focused on establishing a solid testing foundation and verifying infrastructure, following modern 2025/2026 best practices.
+
+**Infrastructure Verification:**
+- [x] Docker containers started and verified (Redis + PostgreSQL)
+- [x] Redis connectivity tested (PING, SET/GET, TTL)
+- [x] PostgreSQL connectivity tested (queries, table operations)
+- [x] Health checks passing for all services
+- [x] Fixed docker-compose.yml (removed obsolete version attribute)
+
+**Test Suite Implementation:**
+- [x] Test dependencies installed (pytest-asyncio, pytest-cov, pytest-mock, httpx)
+- [x] Infrastructure tests (7 tests - Redis & PostgreSQL connectivity)
+- [x] LLM extractor unit tests (14 tests - with mocked Gemini service)
+- [x] API integration tests (23 tests - FastAPI endpoints)
+- [x] Rule-based extractor tests (6 tests - existing)
+- [x] **Total: 50 tests passing** ✅
+
+**Test Coverage:**
+- [x] **81% overall coverage** (exceeds 80% target)
+- [x] extractors/llm_based.py: **100% coverage**
+- [x] extractors/rule_based.py: **98% coverage**
+- [x] extractor.py: **98% coverage**
+- [x] tests/test_api.py: **99% coverage**
+- [x] tests/test_llm_extractor.py: **100% coverage**
+- [x] tests/test_extractor.py: **100% coverage**
+- [x] HTML coverage report generated (htmlcov/)
+
+**Testing Best Practices Applied:**
+- [x] Mocking for LLM service (no real API calls in tests)
+- [x] Fast test execution (< 20 seconds for all 50 tests)
+- [x] Deterministic tests (no flakiness)
+- [x] Cost-free testing (no API charges)
+- [x] Offline capability (tests work without internet)
+- [x] pytest.ini configured with asyncio settings
+- [x] Coverage reporting with HTML output
+
+**Quality Metrics:**
+- Test execution time: ~20 seconds (all 50 tests)
+- No warnings (asyncio deprecation fixed)
+- All assertions passing
+- Ready for CI/CD pipeline integration
+
+---
+
+## Previous Status: Phase 1 - LLM Integration ✅ COMPLETED!
+
+**Completion Date:** 2026-01-06 (Evening)
 
 ### ✅ Completed (Foundation)
 - [x] FastAPI backend with `/health` and `/extract` endpoints
@@ -53,9 +104,38 @@
 - Model: gemini-2.5-flash
 - Status: ✅ Working perfectly!
 
-### 📋 Upcoming
-- [ ] Phase 2: Rate Limiting & Request Queuing
-- [ ] Phase 3: Database Persistence (PostgreSQL)
+### 📋 Next Phase
+
+**Phase 2: Rate Limiting & Request Queuing** (Ready to Start)
+
+**Prerequisites:** ✅ All Complete
+- [x] Phase 1: LLM Integration complete
+- [x] Phase 1.5: Testing & Infrastructure verified
+- [x] Docker containers running (Redis + PostgreSQL)
+- [x] 81% test coverage achieved
+- [x] 50 tests passing
+
+**Objectives:**
+- Implement Redis-based request queue
+- Per-user and global rate limiting (sliding window algorithm)
+- Background job processing (FastAPI BackgroundTasks)
+- Result caching (reduce API costs)
+- Monitoring dashboard for quota tracking
+- Job status tracking (queued/processing/completed)
+- Prevent API quota exhaustion during high traffic
+
+**Estimated Timeline:** 2-3 days
+
+**Implementation Files:**
+- `backend/middleware/rate_limiter.py` - Rate limiting logic
+- `backend/services/redis_service.py` - Redis connection manager
+- `backend/services/queue_service.py` - Job queue management
+- `backend/services/cache_service.py` - Result caching
+- `backend/workers/extraction_worker.py` - Background processing
+- `backend/routers/monitoring.py` - Usage stats API
+
+### 📋 Future Phases
+- [ ] Phase 3: Database Persistence (PostgreSQL + JSONB)
 - [ ] Phase 4: Frontend Visualization (React + TypeScript)
 - [ ] Phase 5: Semantic Search (pgvector - Advanced)
 
