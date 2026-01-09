@@ -1,0 +1,209 @@
+# GitHub Actions CI/CD Pipeline
+# This workflow runs automatically on every push and pull request
+# Ensures code quality and that all tests pass before merging
+
+name: CI Pipeline
+
+# When to run this workflow
+on:
+  push:
+    branches: [main]  # Run on pushes to main branch
+  pull_request:
+    branches: [main]  # Run on PRs targeting main branch
+
+# Environment variables available to all jobs
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ============================================================================
+  # Job 1: Code Quality (Linting & Formatting)
+  # ============================================================================
+  # This job checks code style and catches common errors
+  lint:
+    name: "🎨 Code Quality (Ruff)"
+    runs-on: ubuntu-latest  # Run on GitHub's Ubuntu servers
+
+    steps:
+      # Step 1: Download code from repository
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python
+      - name: 🐍 Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Step 3: Cache pip dependencies (speeds up workflow)
+      - name: 📦 Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-ruff-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # Step 4: Install Ruff
+      - name: 📦 Install Ruff
+        run: pip install ruff
+
+      # Step 5: Run Ruff linting
+      - name: 🔍 Run Ruff linting
+        run: |
+          cd backend
+          ruff check . --output-format=github
+        # --output-format=github creates clickable error links
+
+      # Step 6: Check code formatting
+      - name: 🎨 Check code formatting
+        run: |
+          cd backend
+          ruff format --check .
+        # --check means "error if files need formatting" (don't auto-fix in CI)
+
+  # ============================================================================
+  # Job 2: Tests with Services (Redis & PostgreSQL)
+  # ============================================================================
+  # This job runs all 50 tests with real infrastructure
+  test:
+    name: "🧪 Tests (Python ${{ matrix.python-version }})"
+    runs-on: ubuntu-latest
+
+    # Test matrix: Run tests on multiple Python versions
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]  # Test on both Python 3.11 and 3.12
+      fail-fast: false  # Continue testing other versions even if one fails
+
+    # Docker services (Redis & PostgreSQL) needed for tests
+    services:
+      # Redis service
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      # PostgreSQL service
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: insightgraph
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: devpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U dev"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Step 1: Checkout code
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Cache dependencies (speeds up future runs)
+      - name: 📦 Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-
+            ${{ runner.os }}-pip-
+
+      # Step 4: Install dependencies
+      - name: 📦 Install dependencies
+        run: |
+          cd backend
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Step 5: Create .env file (needed for tests)
+      - name: 📝 Create .env file
+        run: |
+          cat << EOF > .env
+          # Test configuration
+          GEMINI_API_KEY=test_key_for_ci
+          USE_LLM_EXTRACTOR=false
+          DATABASE_URL=postgresql://dev:devpass@localhost:5432/insightgraph
+          REDIS_URL=redis://localhost:6379
+          MAX_RETRIES=3
+          TIMEOUT_SECONDS=30
+          EOF
+
+      # Step 6: Run tests with coverage
+      - name: 🧪 Run tests
+        run: |
+          cd backend
+          pytest tests/ \
+            --cov=. \
+            --cov-report=xml \
+            --cov-report=term \
+            --cov-fail-under=80 \
+            -v
+        # --cov-fail-under=80 means "fail if coverage < 80%"
+
+      # Step 7: Upload coverage report
+      - name: 📊 Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: matrix.python-version == '3.11'  # Only upload once, not for every Python version
+        with:
+          files: ./backend/coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false  # Don't fail CI if Codecov upload fails
+
+  # ============================================================================
+  # Job 3: Build Success
+  # ============================================================================
+  # This job runs only if all previous jobs pass
+  success:
+    name: "✅ All Checks Passed"
+    runs-on: ubuntu-latest
+    needs: [lint, test]  # Depends on lint and test jobs
+    if: success()  # Only run if dependencies succeeded
+
+    steps:
+      - name: ✅ All checks passed
+        run: echo "All CI checks passed successfully!"
+
+  # ============================================================================
+  # Job 4: Security Scan (Optional - can enable later)
+  # ============================================================================
+  # Uncomment to enable security scanning
+  # security:
+  #   name: "🔒 Security Scan"
+  #   runs-on: ubuntu-latest
+  #
+  #   steps:
+  #     - name: 📥 Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: 🐍 Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ env.PYTHON_VERSION }}
+  #
+  #     - name: 🔒 Run Bandit security scan
+  #       run: |
+  #         pip install bandit
+  #         bandit -r backend/ -f json -o bandit-report.json || true
+  #
+  #     - name: 🔒 Check dependency vulnerabilities
+  #       run: |
+  #         pip install safety
+  #         safety check --json || true

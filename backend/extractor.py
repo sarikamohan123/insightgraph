@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import re
-from typing import List, Tuple
 
-from backend.schemas import Node, Edge, ExtractResponse
-
+from backend.schemas import Edge, ExtractResponse, Node
 
 # A tiny "dictionary" of concepts we recognize for now.
 # Later Gemini will do this dynamically.
@@ -27,13 +25,13 @@ def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", text.strip().lower())
 
 
-def _find_known_nodes(text: str) -> List[Node]:
+def _find_known_nodes(text: str) -> list[Node]:
     """
     Return nodes for terms we can recognize.
 
     """
     norm = _normalize(text)
-    nodes: List[Node] = []
+    nodes: list[Node] = []
 
     # We check multi-word terms first (like "data science")
     terms_sorted = sorted(KNOWN_TERMS.keys(), key=len, reverse=True)
@@ -58,7 +56,7 @@ def _find_known_nodes(text: str) -> List[Node]:
     return list(unique.values())
 
 
-def _make_edges(text: str, nodes: List[Node]) -> List[Edge]:
+def _make_edges(text: str, nodes: list[Node]) -> list[Edge]:
     """
     Create edges based on simple patterns.
     Pattern supported:
@@ -91,7 +89,7 @@ def _make_edges(text: str, nodes: List[Node]) -> List[Edge]:
                 return node_id
         return None
 
-    edges: List[Edge] = []
+    edges: list[Edge] = []
     seen: set[tuple[str, str, str]] = set()
 
     for regex, relation in patterns:
@@ -122,7 +120,3 @@ def extract_graph(text: str) -> ExtractResponse:
     nodes = _find_known_nodes(text)
     edges = _make_edges(text, nodes)
     return ExtractResponse(nodes=nodes, edges=edges)
-
-
-
-

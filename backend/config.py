@@ -15,7 +15,6 @@ Usage:
 """
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -33,17 +32,17 @@ class Settings(BaseSettings):
     timeout_seconds: int = 30
 
     # Database Configuration (Phase 3 - not used yet)
-    database_url: Optional[str] = None
+    database_url: str | None = None
 
     # Redis Configuration (Phase 2 - not used yet)
-    redis_url: Optional[str] = None
+    redis_url: str | None = None
 
     # Model configuration
     model_config = SettingsConfigDict(
         env_file="../.env",  # Load from project root (parent directory)
         env_file_encoding="utf-8",
         case_sensitive=False,  # GEMINI_API_KEY == gemini_api_key
-        extra="ignore"  # Ignore extra environment variables
+        extra="ignore",  # Ignore extra environment variables
     )
 
 

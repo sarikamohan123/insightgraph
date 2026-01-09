@@ -27,9 +27,10 @@ This extractor serves as:
 """
 
 import re
-from typing import List
+
+from schemas import Edge, ExtractResponse, Node
+
 from extractors.base import BaseExtractor
-from schemas import Node, Edge, ExtractResponse
 
 
 class RuleBasedExtractor(BaseExtractor):
@@ -93,7 +94,7 @@ class RuleBasedExtractor(BaseExtractor):
         """
         return re.sub(r"\s+", " ", text.strip().lower())
 
-    def _find_known_nodes(self, text: str) -> List[Node]:
+    def _find_known_nodes(self, text: str) -> list[Node]:
         """
         Find entities (nodes) by searching for known terms.
 
@@ -111,7 +112,7 @@ class RuleBasedExtractor(BaseExtractor):
             List of unique Node objects
         """
         norm = self._normalize(text)
-        nodes: List[Node] = []
+        nodes: list[Node] = []
 
         # Sort by length (descending) to match "data science" before "data"
         terms_sorted = sorted(self.KNOWN_TERMS.keys(), key=len, reverse=True)
@@ -125,14 +126,7 @@ class RuleBasedExtractor(BaseExtractor):
                 count = norm.count(term)
                 confidence = 0.9 if count > 1 else 0.6
 
-                nodes.append(
-                    Node(
-                        id=node_id,
-                        label=label,
-                        type=node_type,
-                        confidence=confidence
-                    )
-                )
+                nodes.append(Node(id=node_id, label=label, type=node_type, confidence=confidence))
 
         # Deduplicate by ID
         unique = {}
@@ -141,7 +135,7 @@ class RuleBasedExtractor(BaseExtractor):
 
         return list(unique.values())
 
-    def _make_edges(self, text: str, nodes: List[Node]) -> List[Edge]:
+    def _make_edges(self, text: str, nodes: list[Node]) -> list[Edge]:
         """
         Create edges (relationships) using regex pattern matching.
 
@@ -185,7 +179,7 @@ class RuleBasedExtractor(BaseExtractor):
                     return node_id
             return None
 
-        edges: List[Edge] = []
+        edges: list[Edge] = []
         seen: set[tuple[str, str, str]] = set()
 
         for regex, relation in self.PATTERNS:
@@ -206,12 +200,6 @@ class RuleBasedExtractor(BaseExtractor):
                 # Deduplicate
                 if key not in seen:
                     seen.add(key)
-                    edges.append(
-                        Edge(
-                            source=source_id,
-                            target=target_id,
-                            relation=relation
-                        )
-                    )
+                    edges.append(Edge(source=source_id, target=target_id, relation=relation))
 
         return edges

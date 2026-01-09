@@ -1,0 +1,126 @@
+# Modern Python Project Configuration
+# This file configures ALL Python tools in one place (PEP 518)
+
+[project]
+name = "insightgraph"
+version = "1.0.0"
+description = "Knowledge Graph extraction using LLM-powered NER"
+requires-python = ">=3.11"
+authors = [
+    {name = "InsightGraph Team"}
+]
+
+# ============================================================================
+# Ruff Configuration - Linting & Formatting
+# ============================================================================
+# Ruff replaces: Black, Flake8, isort, pyupgrade, and more
+# Docs: https://docs.astral.sh/ruff/
+
+[tool.ruff]
+# Target Python 3.11+
+target-version = "py311"
+
+# Line length (industry standard is 88-100)
+line-length = 100
+
+# Files to exclude from linting
+exclude = [
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    "htmlcov",
+    "*.egg-info",
+    ".git",
+    "build",
+    "dist",
+]
+
+# ============================================================================
+# Ruff Linting Rules
+# ============================================================================
+# Select which rules to enable
+# Full list: https://docs.astral.sh/ruff/rules/
+
+[tool.ruff.lint]
+# Enable these rule categories:
+select = [
+    "E",   # pycodestyle errors (PEP 8 violations)
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes (undefined names, unused imports)
+    "I",   # isort (import sorting)
+    "N",   # pep8-naming (naming conventions)
+    "UP",  # pyupgrade (modern Python syntax)
+    "B",   # flake8-bugbear (common bugs)
+    "C4",  # flake8-comprehensions (better list/dict comprehensions)
+    "SIM", # flake8-simplify (simplify code)
+]
+
+# Ignore specific rules (with reasons)
+ignore = [
+    "E501",   # Line too long - we use 100, formatter handles this
+    "B008",   # Do not perform function call in argument defaults (FastAPI uses this)
+    "SIM108", # Use ternary operator - we prefer explicit if/else for clarity
+]
+
+# Allow autofix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+
+# ============================================================================
+# Ruff Formatting (Black-compatible)
+# ============================================================================
+[tool.ruff.format]
+# Use double quotes (Python community standard)
+quote-style = "double"
+
+# Indent with spaces, not tabs
+indent-style = "space"
+
+# Respect existing line endings
+line-ending = "auto"
+
+# ============================================================================
+# Import Sorting (isort replacement)
+# ============================================================================
+[tool.ruff.lint.isort]
+# Group imports into sections
+known-first-party = ["backend"]
+
+# Add blank line between import sections
+split-on-trailing-comma = true
+
+# ============================================================================
+# Type Checking with mypy (Optional - Type Safety)
+# ============================================================================
+# mypy catches type errors before runtime
+# Example: passing int when function expects str
+
+[tool.mypy]
+python_version = "3.11"
+
+# Strictness level (we start lenient, can increase later)
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+# Don't require type hints everywhere (gradual typing)
+disallow_untyped_defs = false
+
+# Ignore missing imports from third-party libraries
+ignore_missing_imports = true
+
+# Check untyped function definitions
+check_untyped_defs = true
+
+# Settings for test files (more lenient)
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+ignore_errors = false
+
+# ============================================================================
+# Pytest Configuration
+# ============================================================================
+# Already configured in pytest.ini, but can move here if preferred
+# Keeping pytest.ini for now for backward compatibility

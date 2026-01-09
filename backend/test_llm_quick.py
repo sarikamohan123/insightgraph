@@ -1,7 +1,10 @@
 """Quick test for LLM extractor"""
+
 import asyncio
-from services.llm_service import GeminiService
+
 from extractors.llm_based import LLMExtractor
+from services.llm_service import GeminiService
+
 
 async def test_llm_extraction():
     print("[INFO] Initializing Gemini service...")
@@ -21,6 +24,7 @@ async def test_llm_extraction():
     print(f"\nEdges found: {len(result.edges)}")
     for edge in result.edges:
         print(f"  - {edge.source} --[{edge.relation}]--> {edge.target}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_llm_extraction())

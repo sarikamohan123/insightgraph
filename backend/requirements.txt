@@ -20,3 +20,4 @@ pytest-cov==6.0.0         # Code coverage reports
 
 # Development Tools
 httpx==0.28.1             # HTTP client for testing APIs
+ruff==0.14.11             # Fast Python linter & formatter (replaces Black, Flake8, isort)

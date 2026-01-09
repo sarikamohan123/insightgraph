@@ -39,6 +39,7 @@ def test_no_nodes_if_text_has_no_known_terms():
     assert len(result.nodes) == 0
     assert len(result.edges) == 0
 
+
 def test_no_duplicate_edges():
     text = "Python is used for data science"
     result = extract_graph(text)

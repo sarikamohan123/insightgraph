@@ -28,6 +28,7 @@ Example:
 """
 
 from abc import ABC, abstractmethod
+
 from schemas import ExtractResponse
 
 

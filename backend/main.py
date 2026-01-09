@@ -13,17 +13,16 @@ Architecture:
 - Type-safe with Pydantic models
 """
 
-from fastapi import FastAPI, Depends, HTTPException
-from pydantic import BaseModel, Field
 from typing import Annotated
 
-from schemas import ExtractResponse
+from config import settings
 from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
+from fastapi import Depends, FastAPI, HTTPException
+from pydantic import BaseModel, Field
+from schemas import ExtractResponse
 from services.llm_service import GeminiService
-from config import settings
-
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -31,19 +30,20 @@ app = FastAPI(
     description="Transform unstructured text into knowledge graphs using LLMs",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 
 # Request/Response models
 class ExtractRequest(BaseModel):
     """Request for entity extraction"""
+
     text: str = Field(
         ...,
         description="Input text to analyze",
         min_length=1,
         max_length=10000,
-        examples=["Python is used for data science and web development"]
+        examples=["Python is used for data science and web development"],
     )
 
 
@@ -73,12 +73,7 @@ def get_extractor() -> BaseExtractor:
 
 
 # Health check endpoint
-@app.get(
-    "/health",
-    tags=["System"],
-    summary="Health check",
-    response_model=dict
-)
+@app.get("/health", tags=["System"], summary="Health check", response_model=dict)
 async def health():
     """
     Check if the API is running.
@@ -86,10 +81,7 @@ async def health():
     Returns:
         Simple status message
     """
-    return {
-        "status": "ok",
-        "extractor": "LLM" if settings.use_llm_extractor else "Rule-based"
-    }
+    return {"status": "ok", "extractor": "LLM" if settings.use_llm_extractor else "Rule-based"}
 
 
 # Main extraction endpoint
@@ -105,39 +97,25 @@ async def health():
                 "application/json": {
                     "example": {
                         "nodes": [
-                            {
-                                "id": "python",
-                                "label": "Python",
-                                "type": "Tech",
-                                "confidence": 0.95
-                            },
+                            {"id": "python", "label": "Python", "type": "Tech", "confidence": 0.95},
                             {
                                 "id": "data-science",
                                 "label": "Data Science",
                                 "type": "Concept",
-                                "confidence": 0.9
-                            }
+                                "confidence": 0.9,
+                            },
                         ],
                         "edges": [
-                            {
-                                "source": "python",
-                                "target": "data-science",
-                                "relation": "used_for"
-                            }
-                        ]
+                            {"source": "python", "target": "data-science", "relation": "used_for"}
+                        ],
                     }
                 }
-            }
+            },
         },
-        500: {
-            "description": "Extraction failed (rate limit, API error, etc.)"
-        }
-    }
+        500: {"description": "Extraction failed (rate limit, API error, etc.)"},
+    },
 )
-async def extract(
-    req: ExtractRequest,
-    extractor: Annotated[BaseExtractor, Depends(get_extractor)]
-):
+async def extract(req: ExtractRequest, extractor: Annotated[BaseExtractor, Depends(get_extractor)]):
     """
     Extract entities (nodes) and relationships (edges) from text.
 
@@ -173,9 +151,8 @@ async def extract(
         # Log error and return HTTP 500
         print(f"[ERROR] Extraction failed: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Extraction failed: {str(e)[:200]}"
-        )
+            status_code=500, detail=f"Extraction failed: {str(e)[:200]}"
+        ) from e  # Preserve exception chain for better debugging
 
 
 # Startup event
@@ -186,7 +163,5 @@ async def startup_event():
     print("InsightGraph API Starting...")
     print("=" * 60)
     print(f"Extractor: {'LLM (Gemini)' if settings.use_llm_extractor else 'Rule-based'}")
-    print(f"Docs: http://localhost:8000/docs")
+    print("Docs: http://localhost:8000/docs")
     print("=" * 60 + "\n")
-
-

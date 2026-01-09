@@ -7,6 +7,7 @@ This script checks if your API key is valid and shows available models.
 import google.generativeai as genai
 from config import settings
 
+
 def check_api_status():
     """Check API key validity and available models"""
     print("=" * 60)
@@ -41,8 +42,7 @@ def check_api_status():
 
         # Filter for generation models
         generation_models = [
-            m for m in models
-            if 'generateContent' in m.supported_generation_methods
+            m for m in models if "generateContent" in m.supported_generation_methods
         ]
 
         if not generation_models:
@@ -58,7 +58,7 @@ def check_api_status():
             print(f"  Description: {model.description[:100]}...")
 
             # Check rate limits
-            if hasattr(model, 'rate_limit'):
+            if hasattr(model, "rate_limit"):
                 print(f"  Rate Limit: {model.rate_limit}")
 
             print()
@@ -83,6 +83,7 @@ def check_api_status():
         print("- Visit: https://aistudio.google.com/apikey")
         print("- Check usage: https://aistudio.google.com/usage")
         return False
+
 
 if __name__ == "__main__":
     success = check_api_status()

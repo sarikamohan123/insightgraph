@@ -11,9 +11,9 @@ These tests verify that the infrastructure is properly set up
 before running application tests.
 """
 
+import psycopg2
 import pytest
 import redis
-import psycopg2
 from config import settings
 
 
@@ -41,7 +41,7 @@ class TestRedisInfrastructure:
 
         # Retrieve and verify
         retrieved = client.get(test_key)
-        assert retrieved.decode('utf-8') == test_value
+        assert retrieved.decode("utf-8") == test_value
 
         # Cleanup
         client.delete(test_key)

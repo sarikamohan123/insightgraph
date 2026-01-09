@@ -15,12 +15,10 @@ Uses TestClient for synchronous testing without running server.
 """
 
 import pytest
-from unittest.mock import AsyncMock
-from fastapi.testclient import TestClient
-
-from main import app, get_extractor
 from extractors.base import BaseExtractor
-from schemas import ExtractResponse, Node, Edge
+from fastapi.testclient import TestClient
+from main import app, get_extractor
+from schemas import Edge, ExtractResponse, Node
 
 
 class MockExtractor(BaseExtractor):
@@ -29,12 +27,8 @@ class MockExtractor(BaseExtractor):
     async def extract(self, text: str) -> ExtractResponse:
         """Return mock extraction result"""
         return ExtractResponse(
-            nodes=[
-                Node(id="test-node", label="Test Node", type="Tech", confidence=0.9)
-            ],
-            edges=[
-                Edge(source="test-node", target="other-node", relation="test_relation")
-            ]
+            nodes=[Node(id="test-node", label="Test Node", type="Tech", confidence=0.9)],
+            edges=[Edge(source="test-node", target="other-node", relation="test_relation")],
         )
 
 
@@ -87,18 +81,12 @@ class TestExtractEndpointSuccess:
 
     def test_extract_returns_200(self):
         """Test successful extraction returns 200 OK"""
-        response = client.post(
-            "/extract",
-            json={"text": "Python is great"}
-        )
+        response = client.post("/extract", json={"text": "Python is great"})
         assert response.status_code == 200
 
     def test_extract_returns_nodes_and_edges(self):
         """Test response contains nodes and edges"""
-        response = client.post(
-            "/extract",
-            json={"text": "Python is used for data science"}
-        )
+        response = client.post("/extract", json={"text": "Python is used for data science"})
         data = response.json()
 
         assert "nodes" in data
@@ -108,10 +96,7 @@ class TestExtractEndpointSuccess:
 
     def test_extract_node_structure(self):
         """Test that returned nodes have correct structure"""
-        response = client.post(
-            "/extract",
-            json={"text": "Test text"}
-        )
+        response = client.post("/extract", json={"text": "Test text"})
         data = response.json()
 
         assert len(data["nodes"]) > 0
@@ -131,10 +116,7 @@ class TestExtractEndpointSuccess:
 
     def test_extract_edge_structure(self):
         """Test that returned edges have correct structure"""
-        response = client.post(
-            "/extract",
-            json={"text": "Test text"}
-        )
+        response = client.post("/extract", json={"text": "Test text"})
         data = response.json()
 
         assert len(data["edges"]) > 0
@@ -153,10 +135,7 @@ class TestExtractEndpointSuccess:
     def test_extract_with_long_text(self):
         """Test extraction with longer text (within limits)"""
         long_text = "Python is a programming language. " * 50  # ~200 words
-        response = client.post(
-            "/extract",
-            json={"text": long_text}
-        )
+        response = client.post("/extract", json={"text": long_text})
         assert response.status_code == 200
 
 
@@ -165,27 +144,19 @@ class TestExtractEndpointValidation:
 
     def test_extract_rejects_empty_text(self):
         """Test that empty text is rejected"""
-        response = client.post(
-            "/extract",
-            json={"text": ""}
-        )
+        response = client.post("/extract", json={"text": ""})
         # Should return 422 Unprocessable Entity (validation error)
         assert response.status_code == 422
 
     def test_extract_rejects_missing_text_field(self):
         """Test that missing 'text' field is rejected"""
-        response = client.post(
-            "/extract",
-            json={}
-        )
+        response = client.post("/extract", json={})
         assert response.status_code == 422
 
     def test_extract_rejects_invalid_json(self):
         """Test that invalid JSON is rejected"""
         response = client.post(
-            "/extract",
-            data="not json",
-            headers={"Content-Type": "application/json"}
+            "/extract", data="not json", headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 422
 
@@ -193,7 +164,7 @@ class TestExtractEndpointValidation:
         """Test that wrong field types are rejected"""
         response = client.post(
             "/extract",
-            json={"text": 123}  # Should be string, not int
+            json={"text": 123},  # Should be string, not int
         )
         assert response.status_code == 422
 
@@ -201,10 +172,7 @@ class TestExtractEndpointValidation:
         """Test that unicode text is accepted"""
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
-        response = client.post(
-            "/extract",
-            json={"text": "Python は素晴らしい 🐍"}
-        )
+        response = client.post("/extract", json={"text": "Python は素晴らしい 🐍"})
         assert response.status_code == 200
 
         app.dependency_overrides.clear()
@@ -223,18 +191,12 @@ class TestExtractEndpointErrorHandling:
 
     def test_extract_returns_500_on_extraction_failure(self):
         """Test that extraction errors return 500 Internal Server Error"""
-        response = client.post(
-            "/extract",
-            json={"text": "Test text"}
-        )
+        response = client.post("/extract", json={"text": "Test text"})
         assert response.status_code == 500
 
     def test_extract_error_includes_detail(self):
         """Test that error response includes detail message"""
-        response = client.post(
-            "/extract",
-            json={"text": "Test text"}
-        )
+        response = client.post("/extract", json={"text": "Test text"})
         data = response.json()
 
         assert "detail" in data
@@ -249,7 +211,7 @@ class TestExtractEndpointContentType:
         """Test that endpoint requires JSON content type"""
         response = client.post(
             "/extract",
-            data="text=Python is great"  # Form data instead of JSON
+            data="text=Python is great",  # Form data instead of JSON
         )
         # Should fail because we're not sending JSON
         assert response.status_code == 422
@@ -259,9 +221,7 @@ class TestExtractEndpointContentType:
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
         response = client.post(
-            "/extract",
-            json={"text": "Python"},
-            headers={"Content-Type": "application/json"}
+            "/extract", json={"text": "Python"}, headers={"Content-Type": "application/json"}
         )
         assert response.status_code == 200
 
@@ -300,10 +260,7 @@ class TestDependencyInjection:
         app.dependency_overrides[get_extractor] = lambda: custom_mock
 
         # Make request
-        response = client.post(
-            "/extract",
-            json={"text": "Test"}
-        )
+        response = client.post("/extract", json={"text": "Test"})
 
         # Should use our mock
         assert response.status_code == 200
@@ -320,10 +277,7 @@ class TestDependencyInjection:
 
         # This will use the real get_extractor function
         # which returns either LLM or Rule-based extractor
-        response = client.post(
-            "/extract",
-            json={"text": "Python is great"}
-        )
+        response = client.post("/extract", json={"text": "Python is great"})
 
         # Should work (might be slow if using real LLM)
         assert response.status_code in [200, 500]  # 500 if API key issues
@@ -336,10 +290,7 @@ class TestCORSAndSecurity:
         """Test that API returns proper JSON content type"""
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
-        response = client.post(
-            "/extract",
-            json={"text": "Test"}
-        )
+        response = client.post("/extract", json={"text": "Test"})
 
         assert "application/json" in response.headers["content-type"]
 
@@ -356,10 +307,7 @@ class TestExtractEndpointPerformance:
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
         start = time.time()
-        response = client.post(
-            "/extract",
-            json={"text": "Python is great"}
-        )
+        response = client.post("/extract", json={"text": "Python is great"})
         elapsed = time.time() - start
 
         assert response.status_code == 200

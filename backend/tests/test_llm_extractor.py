@@ -11,14 +11,14 @@ Key Testing Principles:
 - Fast, deterministic, no API costs
 """
 
-import pytest
-from unittest.mock import AsyncMock, patch
-from pydantic import ValidationError
+from unittest.mock import AsyncMock
 
+import pytest
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
+from pydantic import ValidationError
+from schemas import Edge, ExtractResponse, Node
 from services.llm_service import GeminiService
-from schemas import ExtractResponse, Node, Edge
 
 
 @pytest.fixture
@@ -38,11 +38,9 @@ def mock_llm_service():
     service.generate_structured.return_value = ExtractResponse(
         nodes=[
             Node(id="python", label="Python", type="Tech", confidence=0.95),
-            Node(id="data-science", label="Data Science", type="Concept", confidence=0.9)
+            Node(id="data-science", label="Data Science", type="Concept", confidence=0.9),
         ],
-        edges=[
-            Edge(source="python", target="data-science", relation="used_for")
-        ]
+        edges=[Edge(source="python", target="data-science", relation="used_for")],
     )
 
     return service
@@ -79,10 +77,10 @@ class TestLLMExtractorBasic:
 
         # Check first node structure
         node = result.nodes[0]
-        assert hasattr(node, 'id')
-        assert hasattr(node, 'label')
-        assert hasattr(node, 'type')
-        assert hasattr(node, 'confidence')
+        assert hasattr(node, "id")
+        assert hasattr(node, "label")
+        assert hasattr(node, "type")
+        assert hasattr(node, "confidence")
 
         # Validate types
         assert isinstance(node.id, str)
@@ -100,9 +98,9 @@ class TestLLMExtractorBasic:
 
         # Check first edge structure
         edge = result.edges[0]
-        assert hasattr(edge, 'source')
-        assert hasattr(edge, 'target')
-        assert hasattr(edge, 'relation')
+        assert hasattr(edge, "source")
+        assert hasattr(edge, "target")
+        assert hasattr(edge, "relation")
 
         # Validate types
         assert isinstance(edge.source, str)
@@ -113,10 +111,7 @@ class TestLLMExtractorBasic:
     async def test_extract_with_empty_text(self, mock_llm_service):
         """Test extraction with empty text"""
         # Configure mock to return empty result
-        mock_llm_service.generate_structured.return_value = ExtractResponse(
-            nodes=[],
-            edges=[]
-        )
+        mock_llm_service.generate_structured.return_value = ExtractResponse(nodes=[], edges=[])
 
         extractor = LLMExtractor(mock_llm_service)
         result = await extractor.extract("")
@@ -133,8 +128,7 @@ class TestLLMExtractorErrorHandling:
         """Test that ValidationError is raised for malformed responses"""
         # Mock service to raise ValidationError
         mock_llm_service.generate_structured.side_effect = ValidationError.from_exception_data(
-            "test",
-            [{"type": "missing", "loc": ("nodes",), "msg": "Field required"}]
+            "test", [{"type": "missing", "loc": ("nodes",), "msg": "Field required"}]
         )
 
         extractor = LLMExtractor(mock_llm_service)
@@ -185,8 +179,7 @@ class TestLLMExtractorFallback:
 
         # Should fallback without raising exception
         result = await llm_extractor.extract_with_fallback(
-            "Python is used for data science",
-            rule_extractor
+            "Python is used for data science", rule_extractor
         )
 
         # Should return valid result from rule-based extractor
@@ -200,10 +193,7 @@ class TestLLMExtractorFallback:
         llm_extractor = LLMExtractor(mock_llm_service)
         rule_extractor = RuleBasedExtractor()
 
-        result = await llm_extractor.extract_with_fallback(
-            "Python is great",
-            rule_extractor
-        )
+        result = await llm_extractor.extract_with_fallback("Python is great", rule_extractor)
 
         # Verify LLM was called
         assert mock_llm_service.generate_structured.called
@@ -224,10 +214,7 @@ class TestLLMExtractorFallback:
         rule_extractor = RuleBasedExtractor()
 
         # Should fallback gracefully
-        result = await llm_extractor.extract_with_fallback(
-            "Python is used for AI",
-            rule_extractor
-        )
+        result = await llm_extractor.extract_with_fallback("Python is used for AI", rule_extractor)
 
         assert isinstance(result, ExtractResponse)
         assert len(result.nodes) >= 1  # At least "python"
@@ -245,13 +232,13 @@ class TestLLMExtractorIntegration:
                 Node(id="react", label="React", type="Tech", confidence=0.95),
                 Node(id="javascript", label="JavaScript", type="Tech", confidence=0.9),
                 Node(id="facebook", label="Facebook", type="Organization", confidence=0.85),
-                Node(id="ui", label="User Interfaces", type="Concept", confidence=0.8)
+                Node(id="ui", label="User Interfaces", type="Concept", confidence=0.8),
             ],
             edges=[
                 Edge(source="react", target="javascript", relation="written_in"),
                 Edge(source="facebook", target="react", relation="created"),
-                Edge(source="react", target="ui", relation="used_for")
-            ]
+                Edge(source="react", target="ui", relation="used_for"),
+            ],
         )
 
         extractor = LLMExtractor(mock_llm_service)
@@ -311,8 +298,7 @@ class TestLLMExtractorDependencyInjection:
         # We could create another extractor with different service
         service2 = AsyncMock(spec=GeminiService)
         service2.generate_structured.return_value = ExtractResponse(
-            nodes=[Node(id="test", label="Test", type="Tech", confidence=1.0)],
-            edges=[]
+            nodes=[Node(id="test", label="Test", type="Tech", confidence=1.0)], edges=[]
         )
 
         extractor1 = LLMExtractor(service1)

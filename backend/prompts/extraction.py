@@ -18,7 +18,6 @@ Version History:
 
 from string import Template
 
-
 # System-level instruction (sets LLM behavior)
 NER_SYSTEM_PROMPT = """You are an expert AI system specialized in Named Entity Recognition (NER) and Relationship Extraction.
 

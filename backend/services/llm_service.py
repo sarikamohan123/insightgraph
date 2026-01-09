@@ -17,19 +17,18 @@ Design Principles (SOLID):
 - Dependency Inversion: Returns abstractions (Pydantic models), not raw data
 """
 
-import json
 import asyncio
-from typing import TypeVar, Type
-from pydantic import BaseModel, ValidationError
+import json
+from typing import TypeVar
+
 import google.generativeai as genai
-from google.generativeai.types import GenerateContentResponse
-from google.api_core import exceptions as google_exceptions
-
 from config import settings
-
+from google.api_core import exceptions as google_exceptions
+from google.generativeai.types import GenerateContentResponse
+from pydantic import BaseModel, ValidationError
 
 # Generic type for Pydantic models
-T = TypeVar('T', bound=BaseModel)
+T = TypeVar("T", bound=BaseModel)
 
 
 class GeminiService:
@@ -75,10 +74,7 @@ class GeminiService:
         print(f"[INFO] Initialized Gemini with model: {model_name}")
 
     async def generate_structured(
-        self,
-        prompt: str,
-        response_schema: Type[T],
-        system_instruction: str | None = None
+        self, prompt: str, response_schema: type[T], system_instruction: str | None = None
     ) -> T:
         """
         Generate structured output matching a Pydantic schema.
@@ -113,10 +109,10 @@ class GeminiService:
         # Retry with exponential backoff
         return await self._retry_with_backoff(
             func=lambda: self._call_gemini(full_prompt, response_schema),
-            max_retries=settings.max_retries
+            max_retries=settings.max_retries,
         )
 
-    def _build_json_prompt(self, prompt: str, schema: Type[BaseModel]) -> str:
+    def _build_json_prompt(self, prompt: str, schema: type[BaseModel]) -> str:
         """
         Build prompt that requests JSON matching Pydantic schema.
 
@@ -132,11 +128,7 @@ IMPORTANT: Return ONLY valid JSON matching this exact schema:
 
 Do not include any explanatory text, only the JSON object."""
 
-    async def _call_gemini(
-        self,
-        prompt: str,
-        response_schema: Type[T]
-    ) -> T:
+    async def _call_gemini(self, prompt: str, response_schema: type[T]) -> T:
         """
         Make the actual API call to Gemini.
 
@@ -146,9 +138,7 @@ Do not include any explanatory text, only the JSON object."""
         """
         # Run blocking Gemini call in thread pool
         response: GenerateContentResponse = await asyncio.to_thread(
-            self.model.generate_content,
-            prompt,
-            generation_config=self.generation_config
+            self.model.generate_content, prompt, generation_config=self.generation_config
         )
 
         # Extract text from response
@@ -183,12 +173,7 @@ Do not include any explanatory text, only the JSON object."""
 
         return text.strip()
 
-    async def _retry_with_backoff(
-        self,
-        func,
-        max_retries: int = 3,
-        base_delay: float = 1.0
-    ):
+    async def _retry_with_backoff(self, func, max_retries: int = 3, base_delay: float = 1.0):
         """
         Retry function with exponential backoff.
 
@@ -223,7 +208,7 @@ Do not include any explanatory text, only the JSON object."""
                 error_msg = str(e)
 
                 print("\n" + "=" * 60)
-                print(f"[RATE LIMIT] Gemini API quota exceeded")
+                print("[RATE LIMIT] Gemini API quota exceeded")
                 print("=" * 60)
                 print(f"Model: {self.model_name}")
                 print(f"Attempt: {attempt + 1}/{max_retries + 1}")
@@ -242,7 +227,7 @@ Do not include any explanatory text, only the JSON object."""
                 print("=" * 60 + "\n")
 
                 if attempt < max_retries:
-                    delay = base_delay * (2 ** attempt)
+                    delay = base_delay * (2**attempt)
                     print(f"[INFO] Retrying in {delay}s...\n")
                     await asyncio.sleep(delay)
                 else:
@@ -257,7 +242,7 @@ Do not include any explanatory text, only the JSON object."""
                 print(f"Error: {str(e)[:200]}")
 
                 if attempt < max_retries:
-                    delay = base_delay * (2 ** attempt)
+                    delay = base_delay * (2**attempt)
                     print(f"[INFO] Retrying in {delay}s...\n")
                     await asyncio.sleep(delay)
                 else:
@@ -269,9 +254,7 @@ Do not include any explanatory text, only the JSON object."""
 
 # Convenience function for one-off calls
 async def generate_structured(
-    prompt: str,
-    response_schema: Type[T],
-    system_instruction: str | None = None
+    prompt: str, response_schema: type[T], system_instruction: str | None = None
 ) -> T:
     """
     Convenience function for one-off LLM calls without creating service instance.

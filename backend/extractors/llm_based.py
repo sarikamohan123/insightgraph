@@ -35,10 +35,11 @@ Design Patterns Used:
 - **Composition**: Uses service, doesn't inherit from it
 """
 
-from extractors.base import BaseExtractor
-from services.llm_service import GeminiService
 from prompts.extraction import NER_SYSTEM_PROMPT, build_extraction_prompt
 from schemas import ExtractResponse
+from services.llm_service import GeminiService
+
+from extractors.base import BaseExtractor
 
 
 class LLMExtractor(BaseExtractor):
@@ -111,17 +112,13 @@ class LLMExtractor(BaseExtractor):
         # Call LLM and get structured response
         # The service handles all the complexity (API, retry, parsing)
         result = await self.llm.generate_structured(
-            prompt=prompt,
-            response_schema=ExtractResponse,
-            system_instruction=NER_SYSTEM_PROMPT
+            prompt=prompt, response_schema=ExtractResponse, system_instruction=NER_SYSTEM_PROMPT
         )
 
         return result
 
     async def extract_with_fallback(
-        self,
-        text: str,
-        fallback_extractor: BaseExtractor
+        self, text: str, fallback_extractor: BaseExtractor
     ) -> ExtractResponse:
         """
         Extract with automatic fallback on failure.
