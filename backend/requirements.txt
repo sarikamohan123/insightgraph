@@ -10,7 +10,11 @@ python-dotenv==1.0.1        # Load environment variables from .env
 
 # Database & Caching (for Phase 2 & 3)
 redis==5.2.1              # Redis client for rate limiting
-psycopg2-binary==2.9.10   # PostgreSQL adapter
+psycopg2-binary==2.9.10   # PostgreSQL adapter (sync)
+sqlalchemy==2.0.36        # SQL ORM for database operations
+alembic==1.14.0           # Database migrations
+asyncpg==0.30.0           # Async PostgreSQL driver
+greenlet==3.3.0           # Required for async SQLAlchemy
 
 # Testing
 pytest==8.3.4             # Testing framework (compatible with pytest-asyncio)

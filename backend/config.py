@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     max_retries: int = 3
     timeout_seconds: int = 30
 
-    # Database Configuration (Phase 3 - not used yet)
-    database_url: str | None = None
+    # Database Configuration (Phase 3)
+    database_url: str = "postgresql://dev:devpass@localhost:5432/insightgraph"
 
-    # Redis Configuration (Phase 2 - not used yet)
-    redis_url: str | None = None
+    # Redis Configuration (Phase 2)
+    redis_url: str = "redis://localhost:6379"
 
     # Model configuration
     model_config = SettingsConfigDict(

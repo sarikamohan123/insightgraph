@@ -28,7 +28,9 @@ from middleware.rate_limiter import get_rate_limit_status, rate_limit
 from models.job import JobRequest, JobResponse, JobStatus, JobStatusResponse
 from pydantic import BaseModel, Field
 from schemas import ExtractResponse
+from routers import graphs
 from services.cache_service import cache_service
+from services.db_service import close_db, init_db
 from services.job_service import job_service
 from services.llm_service import GeminiService
 from services.redis_service import redis_service
@@ -41,6 +43,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Include routers
+app.include_router(graphs.router)
 
 
 # Request/Response models
@@ -342,6 +347,13 @@ async def startup_event():
     print("InsightGraph API Starting...")
     print("=" * 60)
 
+    # Initialize database
+    try:
+        await init_db()
+        print("Database: Tables initialized")
+    except Exception as e:
+        print(f"Database: Warning - {e}")
+
     # Connect to Redis
     await redis_service.connect()
     redis_healthy = await redis_service.ping()
@@ -362,6 +374,9 @@ async def shutdown_event():
 
     # Disconnect Redis
     await redis_service.disconnect()
+
+    # Close database connections
+    await close_db()
 
     print("Shutdown complete")
     print("=" * 60 + "\n")
