@@ -20,9 +20,94 @@
 
 ---
 
-## Current Status: Phase 1.5 - Testing & Infrastructure ✅ COMPLETED!
+## Current Status: Phase 2 - Rate Limiting & Request Queuing ✅ COMPLETED!
 
-**Last Updated:** 2026-01-08 (Evening)
+**Last Updated:** 2026-01-10 (Evening)
+
+### ✅ Completed (Phase 2 - Rate Limiting & Request Queuing)
+**Completion Date:** 2026-01-10
+
+Phase 2 implemented a comprehensive rate limiting, caching, and async job processing system to handle production traffic and reduce API costs.
+
+**Phase 2a - Redis & Rate Limiting:**
+- [x] Redis service layer (services/redis_service.py)
+  - Connection pooling (max 10 connections)
+  - Rate limiting operations (increment, get_count, get_ttl)
+  - Caching operations (cache_set, cache_get, cache_delete)
+  - Queue operations (queue_push, queue_pop, queue_length)
+- [x] Rate limiter middleware (middleware/rate_limiter.py)
+  - Per-IP rate limiting (10 req/60s)
+  - Global rate limiting (15 req/60s - matches Gemini free tier)
+  - Sliding window algorithm
+  - HTTP 429 responses with Retry-After headers
+- [x] Rate limit status endpoint (GET /rate-limit-status)
+- [x] Redis tested and verified (test_redis_connection.py)
+
+**Phase 2b - Job Queue & Caching:**
+- [x] Job models (models/job.py)
+  - JobStatus enum (PENDING, PROCESSING, COMPLETED, FAILED)
+  - Job request/response models with Pydantic validation
+- [x] Job service (services/job_service.py)
+  - Create jobs and add to Redis queue
+  - Update job status and results
+  - Get job status and track progress
+  - 1-hour TTL for job data
+- [x] Cache service (services/cache_service.py)
+  - SHA-256 hash-based cache keys
+  - 24-hour TTL for cached results
+  - get_or_compute pattern for automatic caching
+  - Cache statistics endpoint
+- [x] Background worker (worker.py)
+  - Long-running process for job processing
+  - Graceful shutdown handling (SIGTERM/SIGINT)
+  - Automatic retry on errors
+  - Integrated with cache service
+- [x] Job endpoints
+  - POST /jobs - Create async extraction job
+  - GET /jobs/{job_id} - Get job status and results
+- [x] Monitoring endpoint (GET /stats)
+  - Cache statistics (hit rate, total cached results)
+  - Queue statistics (pending jobs)
+  - Redis health status
+  - Extractor type information
+
+**Integration & Features:**
+- [x] Cache integrated into /extract endpoint (saves API costs)
+- [x] Cache integrated into background worker
+- [x] All endpoints have rate limiting
+- [x] Comprehensive error handling and logging
+- [x] Progress tracking for jobs (0%, 50%, 100%)
+
+**Testing:**
+- [x] Cache service tests (test_cache_service.py - 11 tests)
+  - Cache hit/miss behavior
+  - Cache key generation
+  - get_or_compute pattern
+  - Cache invalidation
+  - Statistics
+- [x] Job service tests (test_job_service.py - 14 tests)
+  - Job creation and storage
+  - Job status updates (PENDING → PROCESSING → COMPLETED/FAILED)
+  - Queue operations
+  - Error handling
+- [x] Phase 2 endpoint tests (test_phase2_endpoints.py - 15 tests)
+  - POST /jobs endpoint
+  - GET /jobs/{job_id} endpoint
+  - GET /stats endpoint
+  - Cache integration in /extract
+
+**Cost Savings:**
+- Caching reduces duplicate API calls (30-50% savings estimated)
+- Rate limiting prevents quota exhaustion
+- Background jobs prevent timeout issues
+
+**Architecture Benefits:**
+- Non-blocking async job processing
+- Scalable worker pool (can run multiple workers)
+- Redis-backed persistence for reliability
+- Comprehensive monitoring for production readiness
+
+---
 
 ### ✅ Completed (Phase 1.5 - Testing & Infrastructure)
 **Completion Date:** 2026-01-08
@@ -106,33 +191,31 @@ Phase 1.5 focused on establishing a solid testing foundation and verifying infra
 
 ### 📋 Next Phase
 
-**Phase 2: Rate Limiting & Request Queuing** (Ready to Start)
+**Phase 3: Database Persistence** (Ready to Start)
 
 **Prerequisites:** ✅ All Complete
 - [x] Phase 1: LLM Integration complete
 - [x] Phase 1.5: Testing & Infrastructure verified
+- [x] Phase 1.6: Code Quality & DevOps complete
+- [x] Phase 2: Rate Limiting & Request Queuing complete
 - [x] Docker containers running (Redis + PostgreSQL)
-- [x] 81% test coverage achieved
-- [x] 50 tests passing
+- [x] Comprehensive test suite (80+ tests)
 
 **Objectives:**
-- Implement Redis-based request queue
-- Per-user and global rate limiting (sliding window algorithm)
-- Background job processing (FastAPI BackgroundTasks)
-- Result caching (reduce API costs)
-- Monitoring dashboard for quota tracking
-- Job status tracking (queued/processing/completed)
-- Prevent API quota exhaustion during high traffic
-
-**Estimated Timeline:** 2-3 days
+- Store extracted knowledge graphs in PostgreSQL
+- Design normalized schema for nodes, edges, and graphs
+- Implement CRUD operations for graph data
+- Add graph versioning and history tracking
+- Enable graph querying and retrieval
+- Implement data validation and constraints
+- Add database migrations (Alembic)
 
 **Implementation Files:**
-- `backend/middleware/rate_limiter.py` - Rate limiting logic
-- `backend/services/redis_service.py` - Redis connection manager
-- `backend/services/queue_service.py` - Job queue management
-- `backend/services/cache_service.py` - Result caching
-- `backend/workers/extraction_worker.py` - Background processing
-- `backend/routers/monitoring.py` - Usage stats API
+- `backend/models/database.py` - SQLAlchemy models
+- `backend/services/db_service.py` - Database operations
+- `backend/alembic/` - Database migrations
+- `backend/repositories/graph_repository.py` - Data access layer
+- Updated endpoints for graph CRUD operations
 
 ### 📋 Future Phases
 - [ ] Phase 3: Database Persistence (PostgreSQL + JSONB)
