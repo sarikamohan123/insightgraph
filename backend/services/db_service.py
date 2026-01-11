@@ -17,6 +17,7 @@ Usage:
 
 from contextlib import asynccontextmanager
 
+import sqlalchemy as sa
 from config import settings
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
@@ -64,19 +65,47 @@ async def get_db_session():
             await session.close()
 
 
-async def init_db():
+async def check_db_connection():
     """
-    Initialize database (create tables if they don't exist).
+    Check database connectivity.
 
-    NOTE: In production, use Alembic migrations instead.
-    This is mainly for development and testing.
+    Verifies that the database is reachable and tables exist.
+    Does NOT create or modify schema - use Alembic migrations for that.
+
+    Returns:
+        bool: True if connected and tables exist, False otherwise
+
+    Raises:
+        Exception: If database is unreachable
     """
-    from models.database import Base
+    try:
+        async with engine.connect() as conn:
+            # Test basic connectivity
+            await conn.execute(sa.text("SELECT 1"))
 
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+            # Check if graphs table exists (indicating migrations were run)
+            result = await conn.execute(
+                sa.text(
+                    """
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables
+                        WHERE table_schema = 'public'
+                        AND table_name = 'graphs'
+                    )
+                    """
+                )
+            )
+            tables_exist = result.scalar()
 
-    print("[Database] Tables created successfully")
+            if not tables_exist:
+                print("[Database] WARNING: Tables not found. Run 'alembic upgrade head' to create schema.")
+                return False
+
+            return True
+
+    except Exception as e:
+        print(f"[Database] ERROR: Connection failed - {e}")
+        raise
 
 
 async def close_db():

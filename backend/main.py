@@ -19,7 +19,7 @@ from fastapi import FastAPI, Request
 from middleware.rate_limiter import get_rate_limit_status
 from routers import extraction, graphs, jobs
 from services.cache_service import cache_service
-from services.db_service import close_db, init_db
+from services.db_service import check_db_connection, close_db
 from services.job_service import job_service
 from services.redis_service import redis_service
 
@@ -127,12 +127,17 @@ async def startup_event():
     print("InsightGraph API Starting...")
     print("=" * 60)
 
-    # Initialize database
+    # Check database connectivity and schema
     try:
-        await init_db()
-        print("Database: Tables initialized")
+        db_ready = await check_db_connection()
+        if db_ready:
+            print("Database: Connected and ready")
+        else:
+            print("Database: Connected but schema missing")
+            print("         Run: alembic upgrade head")
     except Exception as e:
-        print(f"Database: Warning - {e}")
+        print(f"Database: Connection failed - {e}")
+        print("         Check DATABASE_URL in .env")
 
     # Connect to Redis
     await redis_service.connect()
@@ -140,6 +145,7 @@ async def startup_event():
     print(f"Redis: {'Connected' if redis_healthy else 'Not connected'}")
 
     print(f"Extractor: {'LLM (Gemini)' if settings.use_llm_extractor else 'Rule-based'}")
+    print(f"Authentication: {'Enabled' if settings.api_key else 'Disabled (dev mode)'}")
     print(f"Docs: http://localhost:8000/docs")
     print("=" * 60 + "\n")
 
