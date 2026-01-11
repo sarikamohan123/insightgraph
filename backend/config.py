@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     max_retries: int = 3
     timeout_seconds: int = 30
 
+    # Security Configuration (Phase 3)
+    api_key: str | None = None  # Optional - if not set, endpoints are public
+
     # Database Configuration (Phase 3)
     database_url: str = "postgresql://dev:devpass@localhost:5432/insightgraph"
 
@@ -63,3 +66,9 @@ if __name__ == "__main__":
         print(f"[OK] Gemini API Key: Set (length: {len(settings.gemini_api_key)})")
     else:
         print("[WARNING] Gemini API Key: Not set or using default placeholder")
+
+    # Check API key for authentication
+    if settings.api_key:
+        print(f"[OK] API Key: Set (length: {len(settings.api_key)}) - Authentication enabled")
+    else:
+        print("[WARNING] API Key: Not set - All endpoints are public (dev mode)")

@@ -19,6 +19,7 @@ from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from middleware.api_key_auth import require_api_key
 from models.graph_schemas import (
     GraphCreateRequest,
     GraphListResponse,
@@ -65,8 +66,10 @@ def get_extractor() -> BaseExtractor:
     summary="Create a new knowledge graph",
     responses={
         201: {"description": "Graph created successfully"},
+        401: {"description": "Authentication required - provide X-API-Key header"},
         500: {"description": "Extraction or database error"},
     },
+    dependencies=[Depends(require_api_key)],  # Require authentication
 )
 async def create_graph(
     req: GraphCreateRequest,
@@ -208,8 +211,10 @@ async def get_graph(
     summary="Delete a knowledge graph",
     responses={
         204: {"description": "Graph deleted successfully"},
+        401: {"description": "Authentication required - provide X-API-Key header"},
         404: {"description": "Graph not found"},
     },
+    dependencies=[Depends(require_api_key)],  # Require authentication
 )
 async def delete_graph(
     graph_id: UUID,
