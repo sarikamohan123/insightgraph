@@ -19,10 +19,12 @@ from config import settings
 from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 from schemas import ExtractResponse
 from services.llm_service import GeminiService
+from services.redis_service import redis_service
+from middleware.rate_limiter import rate_limit, get_rate_limit_status
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -84,6 +86,25 @@ async def health():
     return {"status": "ok", "extractor": "LLM" if settings.use_llm_extractor else "Rule-based"}
 
 
+# Rate limit status endpoint
+@app.get(
+    "/rate-limit-status",
+    tags=["System"],
+    summary="Get rate limit status",
+    response_model=dict,
+)
+async def rate_limit_status(request: Request):
+    """
+    Check current rate limit status for your IP.
+
+    Returns:
+        Rate limit information including remaining requests and reset time
+    """
+    client_ip = request.client.host if request.client else "unknown"
+    status = await get_rate_limit_status(client_ip)
+    return status
+
+
 # Main extraction endpoint
 @app.post(
     "/extract",
@@ -112,8 +133,10 @@ async def health():
                 }
             },
         },
-        500: {"description": "Extraction failed (rate limit, API error, etc.)"},
+        429: {"description": "Rate limit exceeded - too many requests"},
+        500: {"description": "Extraction failed (API error, etc.)"},
     },
+    dependencies=[Depends(rate_limit)],  # Add rate limiting
 )
 async def extract(req: ExtractRequest, extractor: Annotated[BaseExtractor, Depends(get_extractor)]):
     """
@@ -158,10 +181,31 @@ async def extract(req: ExtractRequest, extractor: Annotated[BaseExtractor, Depen
 # Startup event
 @app.on_event("startup")
 async def startup_event():
-    """Print startup information"""
+    """Initialize services and print startup information"""
     print("\n" + "=" * 60)
     print("InsightGraph API Starting...")
     print("=" * 60)
+
+    # Connect to Redis
+    await redis_service.connect()
+    redis_healthy = await redis_service.ping()
+    print(f"Redis: {'Connected' if redis_healthy else 'Not connected'}")
+
     print(f"Extractor: {'LLM (Gemini)' if settings.use_llm_extractor else 'Rule-based'}")
-    print("Docs: http://localhost:8000/docs")
+    print(f"Docs: http://localhost:8000/docs")
+    print("=" * 60 + "\n")
+
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup resources on shutdown"""
+    print("\n" + "=" * 60)
+    print("InsightGraph API Shutting Down...")
+    print("=" * 60)
+
+    # Disconnect Redis
+    await redis_service.disconnect()
+
+    print("Shutdown complete")
     print("=" * 60 + "\n")
