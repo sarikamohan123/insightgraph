@@ -16,6 +16,10 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Temporary files
+tmpclaude-*-cwd
+nul
+
 # Node (for later frontend)
 node_modules/
 dist/

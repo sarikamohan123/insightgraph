@@ -104,7 +104,36 @@ async def create_graph(
             description=req.description,
         )
 
-        return graph
+        # Explicitly convert ORM to Pydantic to avoid serialization issues
+        from models.graph_schemas import GraphResponse, NodeResponse, EdgeResponse
+
+        return GraphResponse(
+            id=graph.id,
+            title=graph.title,
+            description=graph.description,
+            source_text=graph.source_text,
+            nodes=[
+                NodeResponse(
+                    id=node.id,
+                    node_id=node.node_id,
+                    label=node.label,
+                    type=node.type,
+                    confidence=node.confidence,
+                )
+                for node in graph.nodes
+            ],
+            edges=[
+                EdgeResponse(
+                    id=edge.id,
+                    source_node_id=edge.source_node_id,
+                    target_node_id=edge.target_node_id,
+                    relation=edge.relation,
+                )
+                for edge in graph.edges
+            ],
+            created_at=graph.created_at,
+            updated_at=graph.updated_at,
+        )
 
     except Exception as e:
         print(f"[ERROR] Graph creation failed: {e}")

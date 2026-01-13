@@ -68,7 +68,7 @@ class GeminiService:
             "temperature": 0.1,  # Low temperature for consistent extraction
             "top_p": 0.95,
             "top_k": 40,
-            "max_output_tokens": 2048,
+            "max_output_tokens": 8192,  # Increased to handle larger graphs
         }
 
         print(f"[INFO] Initialized Gemini with model: {model_name}")
@@ -150,28 +150,97 @@ Do not include any explanatory text, only the JSON object."""
         try:
             # Parse and validate with Pydantic
             data = json.loads(response_text)
+
+            # Handle incomplete extraction response - add missing edges if needed
+            if "nodes" in data and "edges" not in data:
+                print("[WARNING] Response missing 'edges' field - adding empty array")
+                data["edges"] = []
+
             return response_schema.model_validate(data)
 
-        except (json.JSONDecodeError, ValidationError) as e:
-            print(f"[ERROR] Failed to parse LLM response: {e}")
-            print(f"[ERROR] Raw response: {response_text[:200]}...")
-            raise
+        except json.JSONDecodeError as e:
+            print(f"[ERROR] JSON parsing failed: {e}")
+            print(f"[ERROR] Response (first 300 chars): {response_text[:300]}...")
+            raise Exception(f"Invalid JSON from LLM: {str(e)}") from e
+
+        except ValidationError as e:
+            print(f"[ERROR] Schema validation failed: {e}")
+            raise Exception(f"LLM response doesn't match expected schema: {str(e)}") from e
 
     def _clean_json_response(self, text: str) -> str:
         """
-        Remove markdown code blocks and extra whitespace.
+        Remove markdown code blocks, comments, and clean malformed JSON.
 
         Learning Note:
-        LLMs sometimes return: ```json {...} ```
-        We need to extract just the JSON part.
+        LLMs sometimes return:
+        - ```json {...} ```
+        - JSON with // comments
+        - JSON with trailing commas
+        - Extra text before/after JSON
+        - Incomplete/truncated JSON (missing closing braces)
+        We need to extract and clean just the JSON part.
         """
+        import re
+
         # Remove markdown code blocks
-        if text.startswith("```"):
-            lines = text.split("\n")
-            # Remove first line (```json) and last line (```)
-            text = "\n".join(lines[1:-1])
+        if "```" in text:
+            # Extract content between code blocks
+            match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
+            if match:
+                text = match.group(1)
+
+        # Find the first { and last } to extract just the JSON object
+        first_brace = text.find("{")
+        last_brace = text.rfind("}")
+
+        if first_brace != -1:
+            if last_brace != -1:
+                text = text[first_brace:last_brace + 1]
+            else:
+                # Incomplete JSON - extract from first brace to end
+                text = text[first_brace:]
+
+        # Remove single-line comments (// ...)
+        text = re.sub(r"//.*?$", "", text, flags=re.MULTILINE)
+
+        # Remove multi-line comments (/* ... */)
+        text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
+
+        # Remove trailing commas before closing braces/brackets
+        text = re.sub(r",(\s*[}\]])", r"\1", text)
+
+        # Try to fix incomplete JSON by adding missing closing braces
+        text = self._complete_incomplete_json(text.strip())
 
         return text.strip()
+
+    def _complete_incomplete_json(self, text: str) -> str:
+        """
+        Attempt to complete truncated JSON by adding missing closing brackets/braces.
+
+        This handles cases where the LLM response was cut off mid-response.
+        """
+        # Count opening and closing braces/brackets
+        open_braces = text.count("{")
+        close_braces = text.count("}")
+        open_brackets = text.count("[")
+        close_brackets = text.count("]")
+
+        # If JSON appears incomplete, try to complete it
+        if open_braces > close_braces or open_brackets > close_brackets:
+            print(f"[WARNING] Incomplete JSON detected - auto-completing missing brackets")
+
+            # Add missing closing brackets/braces
+            # Work from innermost to outermost (brackets before braces)
+            while close_brackets < open_brackets:
+                text += "\n]"
+                close_brackets += 1
+
+            while close_braces < open_braces:
+                text += "\n}"
+                close_braces += 1
+
+        return text
 
     async def _retry_with_backoff(self, func, max_retries: int = 3, base_delay: float = 1.0):
         """

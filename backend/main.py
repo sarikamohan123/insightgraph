@@ -16,6 +16,7 @@ All feature endpoints are organized in routers/:
 
 from config import settings
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from middleware.rate_limiter import get_rate_limit_status
 from routers import extraction, graphs, jobs
 from services.cache_service import cache_service
@@ -30,6 +31,20 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
+)
+
+# Configure CORS for frontend (Phase 4)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",  # React dev server
+        "http://localhost:5173",  # Vite dev server
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include routers

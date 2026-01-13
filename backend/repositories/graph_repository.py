@@ -106,9 +106,10 @@ class GraphRepository:
                 self.session.add(edge)
 
         await self.session.commit()
-        await self.session.refresh(graph)
 
-        return graph
+        # Fetch fresh graph from database using existing method
+        # This ensures clean state with all relationships properly loaded
+        return await self.get_graph(graph.id)
 
     async def get_graph(self, graph_id: UUID) -> Optional[Graph]:
         """
