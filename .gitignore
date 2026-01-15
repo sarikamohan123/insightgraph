@@ -24,3 +24,8 @@ nul
 node_modules/
 dist/
 build/
+
+# Playwright
+playwright-report/
+playwright/.cache/
+test-results/
