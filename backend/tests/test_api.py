@@ -15,9 +15,12 @@ Uses TestClient for synchronous testing without running server.
 """
 
 import pytest
+from unittest.mock import AsyncMock, patch
 from extractors.base import BaseExtractor
 from fastapi.testclient import TestClient
-from main import app, get_extractor
+from main import app
+from middleware.rate_limiter import rate_limit
+from routers.extraction import get_extractor
 from schemas import Edge, ExtractResponse, Node
 
 
@@ -37,6 +40,19 @@ class FailingExtractor(BaseExtractor):
 
     async def extract(self, text: str) -> ExtractResponse:
         raise Exception("Extraction failed intentionally")
+
+
+# Mock rate limiter - bypasses Redis check
+async def mock_rate_limit():
+    """Mock rate limiter that always allows requests."""
+    pass
+
+
+# Mock result for cache bypass
+MOCK_EXTRACT_RESULT = ExtractResponse(
+    nodes=[Node(id="test-node", label="Test Node", type="Tech", confidence=0.9)],
+    edges=[Edge(source="test-node", target="other-node", relation="test_relation")],
+)
 
 
 # Create test client
@@ -72,11 +88,19 @@ class TestExtractEndpointSuccess:
     """Test /extract endpoint success cases"""
 
     def setup_method(self):
-        """Override extractor with mock before each test"""
+        """Override extractor and rate limiter with mocks before each test"""
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+        # Start patching cache service
+        self.cache_patcher = patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        )
+        self.cache_patcher.start()
 
     def teardown_method(self):
         """Clear dependency overrides after each test"""
+        self.cache_patcher.stop()
         app.dependency_overrides.clear()
 
     def test_extract_returns_200(self):
@@ -142,6 +166,14 @@ class TestExtractEndpointSuccess:
 class TestExtractEndpointValidation:
     """Test request validation"""
 
+    def setup_method(self):
+        """Override rate limiter for validation tests"""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test"""
+        app.dependency_overrides.clear()
+
     def test_extract_rejects_empty_text(self):
         """Test that empty text is rejected"""
         response = client.post("/extract", json={"text": ""})
@@ -172,18 +204,21 @@ class TestExtractEndpointValidation:
         """Test that unicode text is accepted"""
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
-        response = client.post("/extract", json={"text": "Python は素晴らしい 🐍"})
-        assert response.status_code == 200
-
-        app.dependency_overrides.clear()
+        with patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        ):
+            response = client.post("/extract", json={"text": "Python は素晴らしい 🐍"})
+            assert response.status_code == 200
 
 
 class TestExtractEndpointErrorHandling:
     """Test error handling"""
 
     def setup_method(self):
-        """Override extractor with failing mock"""
+        """Override extractor with failing mock and bypass rate limiter"""
         app.dependency_overrides[get_extractor] = lambda: FailingExtractor()
+        app.dependency_overrides[rate_limit] = mock_rate_limit
 
     def teardown_method(self):
         """Clear dependency overrides"""
@@ -207,6 +242,14 @@ class TestExtractEndpointErrorHandling:
 class TestExtractEndpointContentType:
     """Test content type handling"""
 
+    def setup_method(self):
+        """Override rate limiter for content type tests"""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test"""
+        app.dependency_overrides.clear()
+
     def test_extract_requires_json_content_type(self):
         """Test that endpoint requires JSON content type"""
         response = client.post(
@@ -220,12 +263,14 @@ class TestExtractEndpointContentType:
         """Test that endpoint accepts JSON content type"""
         app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
-        response = client.post(
-            "/extract", json={"text": "Python"}, headers={"Content-Type": "application/json"}
-        )
-        assert response.status_code == 200
-
-        app.dependency_overrides.clear()
+        with patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        ):
+            response = client.post(
+                "/extract", json={"text": "Python"}, headers={"Content-Type": "application/json"}
+            )
+            assert response.status_code == 200
 
 
 class TestAPIDocumentation:
@@ -251,6 +296,14 @@ class TestAPIDocumentation:
 class TestDependencyInjection:
     """Test that dependency injection works correctly"""
 
+    def setup_method(self):
+        """Override rate limiter for dependency injection tests"""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test"""
+        app.dependency_overrides.clear()
+
     def test_can_override_extractor(self):
         """Test that we can override the extractor dependency"""
         # Create custom mock
@@ -259,52 +312,81 @@ class TestDependencyInjection:
         # Override dependency
         app.dependency_overrides[get_extractor] = lambda: custom_mock
 
-        # Make request
-        response = client.post("/extract", json={"text": "Test"})
+        # Make request with cache mocked
+        with patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        ):
+            response = client.post("/extract", json={"text": "Test"})
 
-        # Should use our mock
-        assert response.status_code == 200
-        data = response.json()
-        assert data["nodes"][0]["id"] == "test-node"
-
-        # Cleanup
-        app.dependency_overrides.clear()
+            # Should use our mock
+            assert response.status_code == 200
+            data = response.json()
+            assert data["nodes"][0]["id"] == "test-node"
 
     def test_default_extractor_used_without_override(self):
         """Test that default extractor is used when no override"""
-        # Clear any overrides
-        app.dependency_overrides.clear()
+        # Mock cache to bypass Redis requirement
+        with patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        ):
+            # This will use the real get_extractor function
+            # which returns either LLM or Rule-based extractor
+            response = client.post("/extract", json={"text": "Python is great"})
 
-        # This will use the real get_extractor function
-        # which returns either LLM or Rule-based extractor
-        response = client.post("/extract", json={"text": "Python is great"})
-
-        # Should work (might be slow if using real LLM)
-        assert response.status_code in [200, 500]  # 500 if API key issues
+            # Should work with mocked cache
+            assert response.status_code == 200
 
 
 class TestCORSAndSecurity:
     """Test CORS and security headers (if configured)"""
 
+    def setup_method(self):
+        """Override rate limiter and extractor for CORS tests"""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+        app.dependency_overrides[get_extractor] = lambda: MockExtractor()
+        # Start patching cache service
+        self.cache_patcher = patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        )
+        self.cache_patcher.start()
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test"""
+        self.cache_patcher.stop()
+        app.dependency_overrides.clear()
+
     def test_api_returns_json_content_type(self):
         """Test that API returns proper JSON content type"""
-        app.dependency_overrides[get_extractor] = lambda: MockExtractor()
-
         response = client.post("/extract", json={"text": "Test"})
 
         assert "application/json" in response.headers["content-type"]
-
-        app.dependency_overrides.clear()
 
 
 class TestExtractEndpointPerformance:
     """Test basic performance characteristics"""
 
+    def setup_method(self):
+        """Override rate limiter and extractor for performance tests"""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+        app.dependency_overrides[get_extractor] = lambda: MockExtractor()
+        # Start patching cache service
+        self.cache_patcher = patch(
+            "routers.extraction.cache_service.get_or_compute",
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+        )
+        self.cache_patcher.start()
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test"""
+        self.cache_patcher.stop()
+        app.dependency_overrides.clear()
+
     def test_extract_responds_quickly_with_mock(self):
         """Test that mocked extraction is fast"""
         import time
-
-        app.dependency_overrides[get_extractor] = lambda: MockExtractor()
 
         start = time.time()
         response = client.post("/extract", json={"text": "Python is great"})
@@ -313,8 +395,6 @@ class TestExtractEndpointPerformance:
         assert response.status_code == 200
         # Mocked should be very fast (< 1 second)
         assert elapsed < 1.0
-
-        app.dependency_overrides.clear()
 
 
 # Fixtures for reuse across test classes

@@ -15,8 +15,15 @@ from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
 from main import app
+from middleware.rate_limiter import rate_limit
 from models.job import Job, JobStatus
 from schemas import ExtractResponse, Edge, Node
+
+
+# Mock rate limiter - bypasses Redis check
+async def mock_rate_limit():
+    """Mock rate limiter that always allows requests."""
+    pass
 
 
 client = TestClient(app)
@@ -25,14 +32,22 @@ client = TestClient(app)
 class TestJobEndpoints:
     """Test suite for async job endpoints."""
 
+    def setup_method(self):
+        """Override rate limiter before each test."""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test."""
+        app.dependency_overrides.clear()
+
     def test_create_job_success(self):
         """Test creating a new extraction job."""
         mock_create_job = AsyncMock(return_value="test-job-123")
         mock_get_queue_length = AsyncMock(return_value=3)
 
-        with patch("main.job_service.create_job", mock_create_job), patch(
-            "main.job_service.get_queue_length", mock_get_queue_length
-        ), patch("main.rate_limit", AsyncMock(return_value=True)):
+        with patch("routers.jobs.job_service.create_job", mock_create_job), patch(
+            "routers.jobs.job_service.get_queue_length", mock_get_queue_length
+        ):
             response = client.post("/jobs", json={"text": "Python is great for AI"})
 
             assert response.status_code == 201
@@ -66,7 +81,7 @@ class TestJobEndpoints:
             created_at=datetime.utcnow(),
         )
 
-        with patch("main.job_service.get_job", AsyncMock(return_value=job)):
+        with patch("routers.jobs.job_service.get_job", AsyncMock(return_value=job)):
             response = client.get("/jobs/test-job-123")
 
             assert response.status_code == 200
@@ -85,7 +100,7 @@ class TestJobEndpoints:
             created_at=datetime.utcnow(),
         )
 
-        with patch("main.job_service.get_job", AsyncMock(return_value=job)):
+        with patch("routers.jobs.job_service.get_job", AsyncMock(return_value=job)):
             response = client.get("/jobs/test-job-123")
 
             assert response.status_code == 200
@@ -109,7 +124,7 @@ class TestJobEndpoints:
             result=result,
         )
 
-        with patch("main.job_service.get_job", AsyncMock(return_value=job)):
+        with patch("routers.jobs.job_service.get_job", AsyncMock(return_value=job)):
             response = client.get("/jobs/test-job-123")
 
             assert response.status_code == 200
@@ -131,7 +146,7 @@ class TestJobEndpoints:
             error="API error: Rate limit exceeded",
         )
 
-        with patch("main.job_service.get_job", AsyncMock(return_value=job)):
+        with patch("routers.jobs.job_service.get_job", AsyncMock(return_value=job)):
             response = client.get("/jobs/test-job-123")
 
             assert response.status_code == 200
@@ -142,7 +157,7 @@ class TestJobEndpoints:
 
     def test_get_job_status_not_found(self):
         """Test getting status of non-existent job."""
-        with patch("main.job_service.get_job", AsyncMock(return_value=None)):
+        with patch("routers.jobs.job_service.get_job", AsyncMock(return_value=None)):
             response = client.get("/jobs/nonexistent-job")
 
             assert response.status_code == 404
@@ -219,6 +234,14 @@ class TestRateLimitEndpoint:
 class TestExtractWithCache:
     """Test extract endpoint with caching."""
 
+    def setup_method(self):
+        """Override rate limiter before each test."""
+        app.dependency_overrides[rate_limit] = mock_rate_limit
+
+    def teardown_method(self):
+        """Clear dependency overrides after each test."""
+        app.dependency_overrides.clear()
+
     def test_extract_cache_hit(self):
         """Test extraction with cache hit (no LLM call)."""
         cached_result = ExtractResponse(
@@ -226,10 +249,10 @@ class TestExtractWithCache:
             edges=[Edge(source="python", target="ai", relation="used_for")],
         )
 
-        # Mock cache hit
+        # Mock cache hit - patch in routers.extraction where they're used
         with patch(
-            "main.cache_service.get_or_compute", AsyncMock(return_value=cached_result)
-        ), patch("main.rate_limit", AsyncMock(return_value=True)):
+            "routers.extraction.cache_service.get_or_compute", AsyncMock(return_value=cached_result)
+        ):
             response = client.post("/extract", json={"text": "Python is used for AI"})
 
             assert response.status_code == 200
@@ -244,10 +267,10 @@ class TestExtractWithCache:
             edges=[Edge(source="python", target="ai", relation="used_for")],
         )
 
-        # Mock cache miss + computation
+        # Mock cache miss + computation - patch in routers.extraction
         with patch(
-            "main.cache_service.get_or_compute", AsyncMock(return_value=fresh_result)
-        ), patch("main.rate_limit", AsyncMock(return_value=True)):
+            "routers.extraction.cache_service.get_or_compute", AsyncMock(return_value=fresh_result)
+        ):
             response = client.post("/extract", json={"text": "Python is amazing for AI"})
 
             assert response.status_code == 200
