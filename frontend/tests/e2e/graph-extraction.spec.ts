@@ -7,6 +7,28 @@
 
 import { test, expect } from '@playwright/test';
 
+// Helper to mock window.alert (required for Firefox compatibility)
+async function mockAlerts(page: any) {
+  await page.evaluate(() => {
+    (window as any).__alertMessages = [];
+    window.alert = (msg: string) => {
+      (window as any).__alertMessages.push(msg);
+    };
+  });
+}
+
+// Helper to set up API key with mocked alerts (works in all browsers including Firefox)
+async function setupApiKey(page: any, apiKey: string) {
+  await mockAlerts(page);
+
+  const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
+  await apiKeyInput.fill(apiKey);
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  // Wait for the key to be saved
+  await expect(page.getByText('API key is configured')).toBeVisible();
+}
+
 test.describe('Graph Extraction Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -61,15 +83,7 @@ test.describe('Graph Extraction Flow', () => {
 
   test('should fill form and create a graph successfully', async ({ page }) => {
     // Set API key first (required for creating graphs)
-    const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
-    await apiKeyInput.fill('test-api-key');
-
-    // Handle the alert dialog
-    page.on('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
-    await page.getByRole('button', { name: 'Save' }).click();
+    await setupApiKey(page, 'test-api-key');
 
     // Fill the form
     await page.locator('#title').fill('Python Knowledge Graph');
@@ -93,14 +107,7 @@ test.describe('Graph Extraction Flow', () => {
 
   test('should clear form after successful submission', async ({ page }) => {
     // Set API key
-    const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
-    await apiKeyInput.fill('test-api-key');
-
-    page.on('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
-    await page.getByRole('button', { name: 'Save' }).click();
+    await setupApiKey(page, 'test-api-key');
 
     // Fill and submit form
     await page.locator('#title').fill('Test Graph');
@@ -131,14 +138,7 @@ test.describe('Graph Visualization', () => {
 
   test('should display graph metadata when a graph is created', async ({ page }) => {
     // Set API key
-    const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
-    await apiKeyInput.fill('test-api-key');
-
-    page.on('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
-    await page.getByRole('button', { name: 'Save' }).click();
+    await setupApiKey(page, 'test-api-key');
 
     // Create a graph
     await page.locator('#text').fill('JavaScript and TypeScript are programming languages');

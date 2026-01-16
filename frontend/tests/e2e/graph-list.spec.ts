@@ -7,9 +7,41 @@
 
 import { test, expect } from '@playwright/test';
 
+// Helper to mock window.alert and window.confirm (required for Firefox compatibility)
+async function mockDialogs(page: any) {
+  await page.evaluate(() => {
+    (window as any).__alertMessages = [];
+    (window as any).__confirmCalls = [];
+    (window as any).__confirmResult = true; // Default to accepting confirms
+
+    window.alert = (msg: string) => {
+      (window as any).__alertMessages.push(msg);
+    };
+
+    window.confirm = (msg: string) => {
+      (window as any).__confirmCalls.push(msg);
+      return (window as any).__confirmResult;
+    };
+  });
+}
+
+// Helper to set up API key with mocked alerts (works in all browsers including Firefox)
+async function setupApiKey(page: any, apiKey: string) {
+  await mockDialogs(page);
+
+  const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
+  await apiKeyInput.fill(apiKey);
+  await page.getByRole('button', { name: 'Save' }).click();
+
+  // Wait for the key to be saved
+  await expect(page.getByText('API key is configured')).toBeVisible();
+}
+
 test.describe('Graph List', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
+    // Scroll to Saved Graphs section to ensure it's visible
+    await page.getByRole('heading', { name: 'Saved Graphs' }).scrollIntoViewIfNeeded();
   });
 
   test('should display the graph list section', async ({ page }) => {
@@ -25,19 +57,22 @@ test.describe('Graph List', () => {
   });
 
   test('should show graph count', async ({ page }) => {
-    // Wait for loading to complete
-    await expect(page.getByText(/\d+ graphs? found/)).toBeVisible({ timeout: 10000 });
+    // Wait for loading to complete (longer timeout for Firefox)
+    await expect(page.getByText(/\d+ graphs? found/)).toBeVisible({ timeout: 20000 });
   });
 
   test('should show empty state when no graphs exist', async ({ page }) => {
     // This test assumes we might have an empty database
-    // Check if either graphs are shown or empty state
+    // Check if either graphs are shown or empty state (longer timeout for Firefox)
     const graphsOrEmpty = page.getByText(/\d+ graphs? found|No graphs found/);
-    await expect(graphsOrEmpty).toBeVisible({ timeout: 10000 });
+    await expect(graphsOrEmpty).toBeVisible({ timeout: 20000 });
   });
 
   test('should filter graphs when searching', async ({ page }) => {
     const searchInput = page.locator('input[placeholder="Search graphs..."]');
+
+    // Wait for initial load (longer timeout for Firefox)
+    await expect(page.getByText(/\d+ graphs? found/)).toBeVisible({ timeout: 20000 });
 
     // Type a search query
     await searchInput.fill('Python');
@@ -51,6 +86,9 @@ test.describe('Graph List', () => {
 
   test('should clear search and show all graphs', async ({ page }) => {
     const searchInput = page.locator('input[placeholder="Search graphs..."]');
+
+    // Wait for initial load (longer timeout for Firefox)
+    await expect(page.getByText(/\d+ graphs? found/)).toBeVisible({ timeout: 20000 });
 
     // Type a search query
     await searchInput.fill('test');
@@ -69,15 +107,8 @@ test.describe('Graph Selection', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
 
-    // Set API key for creating graphs
-    const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
-    await apiKeyInput.fill('test-api-key');
-
-    page.on('dialog', async (dialog) => {
-      await dialog.accept();
-    });
-
-    await page.getByRole('button', { name: 'Save' }).click();
+    // Set API key for creating graphs with mocked dialogs
+    await setupApiKey(page, 'test-api-key');
   });
 
   test('should select a graph from the list and show it in visualization', async ({ page }) => {
@@ -120,16 +151,8 @@ test.describe('Graph Deletion', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
 
-    // Set API key
-    const apiKeyInput = page.locator('input[placeholder="Enter your API key"]');
-    await apiKeyInput.fill('test-api-key');
-
-    page.on('dialog', async (dialog) => {
-      // Accept both the API key saved alert and delete confirmation
-      await dialog.accept();
-    });
-
-    await page.getByRole('button', { name: 'Save' }).click();
+    // Set API key with mocked dialogs
+    await setupApiKey(page, 'test-api-key');
   });
 
   test('should show delete button on graph items', async ({ page }) => {
@@ -158,16 +181,18 @@ test.describe('Graph Deletion', () => {
     await page.waitForTimeout(1000);
 
     // Find the delete button for our graph
-    const graphItem = page.locator('text=Graph to Delete').first();
+    const graphItem = page.locator('h3:has-text("Graph to Delete")').first();
     if (await graphItem.isVisible()) {
-      // The delete button is a sibling in the same container
+      // Click delete button (confirm is mocked to return true)
       const deleteButton = page.getByRole('button', { name: 'Delete' }).first();
-
-      // Click delete - dialog handler will accept
       await deleteButton.click();
 
-      // Graph should be removed from list (or at least the action should complete)
+      // Wait for deletion to complete
       await page.waitForTimeout(1000);
+
+      // Verify confirm was called
+      const confirmCalls = await page.evaluate(() => (window as any).__confirmCalls || []);
+      expect(confirmCalls.length).toBeGreaterThan(0);
     }
   });
 });
