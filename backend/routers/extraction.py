@@ -10,6 +10,7 @@ Endpoints:
 
 from typing import Annotated
 
+from config import settings
 from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
@@ -19,8 +20,6 @@ from pydantic import BaseModel, Field
 from schemas import ExtractResponse
 from services.cache_service import cache_service
 from services.llm_service import GeminiService
-
-from config import settings
 
 # Create router
 router = APIRouter(tags=["Extraction"])

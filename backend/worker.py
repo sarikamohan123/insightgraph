@@ -120,9 +120,7 @@ class Worker:
             result_dict = result.model_dump()
 
             # Update job with result
-            await job_service.update_job_status(
-                job_id, JobStatus.COMPLETED, result=result_dict
-            )
+            await job_service.update_job_status(job_id, JobStatus.COMPLETED, result=result_dict)
 
             print(f"[Worker] Job {job_id} completed successfully")
 

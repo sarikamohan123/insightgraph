@@ -6,13 +6,12 @@ Tests CRUD operations for knowledge graphs in PostgreSQL.
 """
 
 import pytest
-from models.database import Base, Edge, Graph, Node
+from models.database import Base, Edge, Node
 from repositories.graph_repository import GraphRepository
 from schemas import Edge as EdgeSchema
 from schemas import ExtractResponse
 from schemas import Node as NodeSchema
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
 
 # Test database URL (use a separate test database)
 TEST_DATABASE_URL = "postgresql+asyncpg://dev:devpass@localhost:5432/insightgraph_test"

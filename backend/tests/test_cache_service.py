@@ -9,10 +9,10 @@ Tests caching functionality:
 - get_or_compute pattern
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from schemas import ExtractResponse, Edge, Node
+import pytest
+from schemas import Edge, ExtractResponse, Node
 from services.cache_service import CacheService
 
 
@@ -68,7 +68,9 @@ class TestCacheService:
         # Mock Redis to return cached data
         cached_data = sample_result.model_dump()
 
-        with patch("services.cache_service.redis_service.cache_get", AsyncMock(return_value=cached_data)):
+        with patch(
+            "services.cache_service.redis_service.cache_get", AsyncMock(return_value=cached_data)
+        ):
             result = await cache_service.get("Python is great")
 
             assert result is not None
@@ -109,8 +111,9 @@ class TestCacheService:
     async def test_get_or_compute_cache_miss(self, cache_service, sample_result):
         """Test get_or_compute computes and caches on miss."""
         # Mock cache miss
-        with patch.object(cache_service, "get", AsyncMock(return_value=None)), patch.object(
-            cache_service, "set", AsyncMock()
+        with (
+            patch.object(cache_service, "get", AsyncMock(return_value=None)),
+            patch.object(cache_service, "set", AsyncMock()),
         ):
             compute_fn = AsyncMock(return_value=sample_result)
 

@@ -195,7 +195,7 @@ Do not include any explanatory text, only the JSON object."""
 
         if first_brace != -1:
             if last_brace != -1:
-                text = text[first_brace:last_brace + 1]
+                text = text[first_brace : last_brace + 1]
             else:
                 # Incomplete JSON - extract from first brace to end
                 text = text[first_brace:]
@@ -228,7 +228,7 @@ Do not include any explanatory text, only the JSON object."""
 
         # If JSON appears incomplete, try to complete it
         if open_braces > close_braces or open_brackets > close_brackets:
-            print(f"[WARNING] Incomplete JSON detected - auto-completing missing brackets")
+            print("[WARNING] Incomplete JSON detected - auto-completing missing brackets")
 
             # Add missing closing brackets/braces
             # Work from innermost to outermost (brackets before braces)

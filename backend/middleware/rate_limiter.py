@@ -86,9 +86,7 @@ async def rate_limit(request: Request):
         )
 
     # Check global rate limit (all users combined)
-    global_count = await redis_service.increment(
-        global_key, ttl=RateLimitConfig.GLOBAL_WINDOW
-    )
+    global_count = await redis_service.increment(global_key, ttl=RateLimitConfig.GLOBAL_WINDOW)
 
     if global_count > RateLimitConfig.GLOBAL_REQUESTS:
         ttl = await redis_service.get_ttl(global_key)

@@ -8,17 +8,15 @@ Uses mocks to avoid database and external service dependencies.
 
 import uuid
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
-
 from main import app
 from middleware.api_key_auth import require_api_key
-from models.database import Edge, Graph, Node
 from routers.graphs import get_extractor, get_graph_repository
-from schemas import ExtractResponse
 from schemas import Edge as EdgeSchema
+from schemas import ExtractResponse
 from schemas import Node as NodeSchema
 
 

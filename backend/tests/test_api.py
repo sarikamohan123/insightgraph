@@ -14,8 +14,9 @@ Tests verify:
 Uses TestClient for synchronous testing without running server.
 """
 
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
 from extractors.base import BaseExtractor
 from fastapi.testclient import TestClient
 from main import app
@@ -94,7 +95,7 @@ class TestExtractEndpointSuccess:
         # Start patching cache service
         self.cache_patcher = patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         )
         self.cache_patcher.start()
 
@@ -206,7 +207,7 @@ class TestExtractEndpointValidation:
 
         with patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         ):
             response = client.post("/extract", json={"text": "Python は素晴らしい 🐍"})
             assert response.status_code == 200
@@ -265,7 +266,7 @@ class TestExtractEndpointContentType:
 
         with patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         ):
             response = client.post(
                 "/extract", json={"text": "Python"}, headers={"Content-Type": "application/json"}
@@ -315,7 +316,7 @@ class TestDependencyInjection:
         # Make request with cache mocked
         with patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         ):
             response = client.post("/extract", json={"text": "Test"})
 
@@ -329,7 +330,7 @@ class TestDependencyInjection:
         # Mock cache to bypass Redis requirement
         with patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         ):
             # This will use the real get_extractor function
             # which returns either LLM or Rule-based extractor
@@ -349,7 +350,7 @@ class TestCORSAndSecurity:
         # Start patching cache service
         self.cache_patcher = patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         )
         self.cache_patcher.start()
 
@@ -375,7 +376,7 @@ class TestExtractEndpointPerformance:
         # Start patching cache service
         self.cache_patcher = patch(
             "routers.extraction.cache_service.get_or_compute",
-            AsyncMock(return_value=MOCK_EXTRACT_RESULT)
+            AsyncMock(return_value=MOCK_EXTRACT_RESULT),
         )
         self.cache_patcher.start()
 

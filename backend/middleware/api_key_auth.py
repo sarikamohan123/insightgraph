@@ -18,7 +18,7 @@ Configuration:
 """
 
 from config import settings
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import HTTPException, Security, status
 from fastapi.security import APIKeyHeader
 
 # Define API key header scheme

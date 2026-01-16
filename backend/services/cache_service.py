@@ -21,10 +21,11 @@ Usage:
 """
 
 import hashlib
-import json
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from schemas import ExtractResponse
+
 from services.redis_service import redis_service
 
 
@@ -89,9 +90,7 @@ class CacheService:
 
         print(f"[Cache] SET key {cache_key[:30]}... (TTL: {self.CACHE_TTL}s)")
 
-    async def get_or_compute(
-        self, text: str, compute_fn: Callable[[], Any]
-    ) -> ExtractResponse:
+    async def get_or_compute(self, text: str, compute_fn: Callable[[], Any]) -> ExtractResponse:
         """
         Get from cache or compute and cache result.
 

@@ -161,7 +161,7 @@ async def startup_event():
 
     print(f"Extractor: {'LLM (Gemini)' if settings.use_llm_extractor else 'Rule-based'}")
     print(f"Authentication: {'Enabled' if settings.api_key else 'Disabled (dev mode)'}")
-    print(f"Docs: http://localhost:8000/docs")
+    print("Docs: http://localhost:8000/docs")
     print("=" * 60 + "\n")
 
 

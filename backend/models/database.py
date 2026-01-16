@@ -39,9 +39,7 @@ class Graph(Base):
     source_text = Column(Text, nullable=False)  # Original input text
     graph_metadata = Column(JSON, nullable=True)  # Flexible storage for extra data
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     nodes = relationship("Node", back_populates="graph", cascade="all, delete-orphan")

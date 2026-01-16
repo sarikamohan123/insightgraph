@@ -19,8 +19,6 @@ Why use Repository Pattern?
 - Single place to optimize queries
 """
 
-from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from models.database import Edge, Graph, Node
@@ -49,8 +47,8 @@ class GraphRepository:
         self,
         source_text: str,
         extract_result: ExtractResponse,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        title: str | None = None,
+        description: str | None = None,
     ) -> Graph:
         """
         Save an extracted knowledge graph to database.
@@ -69,7 +67,10 @@ class GraphRepository:
             title=title,
             description=description,
             source_text=source_text,
-            graph_metadata={"node_count": len(extract_result.nodes), "edge_count": len(extract_result.edges)},
+            graph_metadata={
+                "node_count": len(extract_result.nodes),
+                "edge_count": len(extract_result.edges),
+            },
         )
         self.session.add(graph)
         await self.session.flush()  # Get graph ID without committing
@@ -111,7 +112,7 @@ class GraphRepository:
         # This ensures clean state with all relationships properly loaded
         return await self.get_graph(graph.id)
 
-    async def get_graph(self, graph_id: UUID) -> Optional[Graph]:
+    async def get_graph(self, graph_id: UUID) -> Graph | None:
         """
         Retrieve a graph by ID with all its nodes and edges.
 
@@ -130,7 +131,7 @@ class GraphRepository:
 
         return graph
 
-    async def list_graphs(self, limit: int = 50, offset: int = 0) -> List[Graph]:
+    async def list_graphs(self, limit: int = 50, offset: int = 0) -> list[Graph]:
         """
         Get all graphs with pagination.
 
@@ -174,7 +175,7 @@ class GraphRepository:
         await self.session.commit()
         return True
 
-    async def search_graphs(self, query: str, limit: int = 20) -> List[Graph]:
+    async def search_graphs(self, query: str, limit: int = 20) -> list[Graph]:
         """
         Search graphs by text content (simple substring search).
 

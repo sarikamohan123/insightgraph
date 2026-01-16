@@ -12,7 +12,6 @@ Why separate schemas from database models?
 """
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,11 +46,11 @@ class GraphResponse(BaseModel):
     """Response model for a complete knowledge graph."""
 
     id: UUID = Field(..., description="Graph UUID")
-    title: Optional[str] = Field(None, description="Optional graph title")
-    description: Optional[str] = Field(None, description="Optional description")
+    title: str | None = Field(None, description="Optional graph title")
+    description: str | None = Field(None, description="Optional description")
     source_text: str = Field(..., description="Original input text")
-    nodes: List[NodeResponse] = Field(default_factory=list, description="Extracted entities")
-    edges: List[EdgeResponse] = Field(default_factory=list, description="Relationships")
+    nodes: list[NodeResponse] = Field(default_factory=list, description="Extracted entities")
+    edges: list[EdgeResponse] = Field(default_factory=list, description="Relationships")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -62,7 +61,7 @@ class GraphResponse(BaseModel):
 class GraphListResponse(BaseModel):
     """Response model for list of graphs with pagination."""
 
-    graphs: List[GraphResponse] = Field(..., description="List of graphs")
+    graphs: list[GraphResponse] = Field(..., description="List of graphs")
     total: int = Field(..., description="Total number of graphs")
     limit: int = Field(..., description="Page size")
     offset: int = Field(..., description="Offset")
@@ -78,9 +77,5 @@ class GraphCreateRequest(BaseModel):
         max_length=10000,
         examples=["Python is used for data science and machine learning"],
     )
-    title: Optional[str] = Field(
-        None, description="Optional title for the graph", max_length=255
-    )
-    description: Optional[str] = Field(
-        None, description="Optional description", max_length=1000
-    )
+    title: str | None = Field(None, description="Optional title for the graph", max_length=255)
+    description: str | None = Field(None, description="Optional description", max_length=1000)

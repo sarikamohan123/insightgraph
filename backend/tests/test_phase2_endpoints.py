@@ -9,15 +9,14 @@ Tests new endpoints added in Phase 2:
 - GET /rate-limit-status - Rate limit info
 """
 
-import pytest
 from datetime import datetime
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
+from fastapi.testclient import TestClient
 from main import app
 from middleware.rate_limiter import rate_limit
 from models.job import Job, JobStatus
-from schemas import ExtractResponse, Edge, Node
+from schemas import Edge, ExtractResponse, Node
 
 
 # Mock rate limiter - bypasses Redis check
@@ -45,8 +44,9 @@ class TestJobEndpoints:
         mock_create_job = AsyncMock(return_value="test-job-123")
         mock_get_queue_length = AsyncMock(return_value=3)
 
-        with patch("routers.jobs.job_service.create_job", mock_create_job), patch(
-            "routers.jobs.job_service.get_queue_length", mock_get_queue_length
+        with (
+            patch("routers.jobs.job_service.create_job", mock_create_job),
+            patch("routers.jobs.job_service.get_queue_length", mock_get_queue_length),
         ):
             response = client.post("/jobs", json={"text": "Python is great for AI"})
 
@@ -177,10 +177,11 @@ class TestStatsEndpoint:
             "cache_ttl_hours": 24.0,
         }
 
-        with patch("main.cache_service.get_stats", AsyncMock(return_value=mock_cache_stats)), patch(
-            "main.job_service.get_queue_length", AsyncMock(return_value=5)
-        ), patch("main.redis_service.ping", AsyncMock(return_value=True)), patch(
-            "main.redis_service.redis", True
+        with (
+            patch("main.cache_service.get_stats", AsyncMock(return_value=mock_cache_stats)),
+            patch("main.job_service.get_queue_length", AsyncMock(return_value=5)),
+            patch("main.redis_service.ping", AsyncMock(return_value=True)),
+            patch("main.redis_service.redis", True),
         ):
             response = client.get("/stats")
 

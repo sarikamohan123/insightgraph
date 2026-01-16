@@ -15,6 +15,7 @@ Endpoints:
 from typing import Annotated
 from uuid import UUID
 
+from config import settings
 from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
@@ -29,8 +30,6 @@ from repositories.graph_repository import GraphRepository
 from services.db_service import get_db_session
 from services.llm_service import GeminiService
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from config import settings
 
 # Create router
 router = APIRouter(prefix="/graphs", tags=["Graphs"])
@@ -105,7 +104,7 @@ async def create_graph(
         )
 
         # Explicitly convert ORM to Pydantic to avoid serialization issues
-        from models.graph_schemas import GraphResponse, NodeResponse, EdgeResponse
+        from models.graph_schemas import EdgeResponse, GraphResponse, NodeResponse
 
         return GraphResponse(
             id=graph.id,

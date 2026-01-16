@@ -98,7 +98,9 @@ async def check_db_connection():
             tables_exist = result.scalar()
 
             if not tables_exist:
-                print("[Database] WARNING: Tables not found. Run 'alembic upgrade head' to create schema.")
+                print(
+                    "[Database] WARNING: Tables not found. Run 'alembic upgrade head' to create schema."
+                )
                 return False
 
             return True

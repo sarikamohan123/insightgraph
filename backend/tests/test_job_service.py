@@ -9,10 +9,10 @@ Tests job queue functionality:
 - Job lifecycle
 """
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
+import pytest
 from models.job import Job, JobStatus
 from services.job_service import JobService
 
@@ -30,8 +30,9 @@ class TestJobService:
         """Test creating a new job."""
         text = "Python is used for data science"
 
-        with patch("services.job_service.redis_service.cache_set", AsyncMock()), patch(
-            "services.job_service.redis_service.queue_push", AsyncMock()
+        with (
+            patch("services.job_service.redis_service.cache_set", AsyncMock()),
+            patch("services.job_service.redis_service.queue_push", AsyncMock()),
         ):
             job_id = await job_service.create_job(text)
 
@@ -47,8 +48,9 @@ class TestJobService:
         mock_cache_set = AsyncMock()
         mock_queue_push = AsyncMock()
 
-        with patch("services.job_service.redis_service.cache_set", mock_cache_set), patch(
-            "services.job_service.redis_service.queue_push", mock_queue_push
+        with (
+            patch("services.job_service.redis_service.cache_set", mock_cache_set),
+            patch("services.job_service.redis_service.queue_push", mock_queue_push),
         ):
             job_id = await job_service.create_job(text)
 
@@ -73,8 +75,9 @@ class TestJobService:
         text = "Python is great"
         mock_queue_push = AsyncMock()
 
-        with patch("services.job_service.redis_service.cache_set", AsyncMock()), patch(
-            "services.job_service.redis_service.queue_push", mock_queue_push
+        with (
+            patch("services.job_service.redis_service.cache_set", AsyncMock()),
+            patch("services.job_service.redis_service.queue_push", mock_queue_push),
         ):
             job_id = await job_service.create_job(text)
 
@@ -97,7 +100,9 @@ class TestJobService:
             "error": None,
         }
 
-        with patch("services.job_service.redis_service.cache_get", AsyncMock(return_value=job_data)):
+        with patch(
+            "services.job_service.redis_service.cache_get", AsyncMock(return_value=job_data)
+        ):
             job = await job_service.get_job(job_id)
 
             assert job is not None
@@ -123,9 +128,10 @@ class TestJobService:
             created_at=datetime.utcnow(),
         )
 
-        with patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)), patch(
-            "services.job_service.redis_service.cache_set", AsyncMock()
-        ) as mock_cache_set:
+        with (
+            patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)),
+            patch("services.job_service.redis_service.cache_set", AsyncMock()) as mock_cache_set,
+        ):
             await job_service.update_job_status(job_id, JobStatus.PROCESSING)
 
             # Verify status was updated
@@ -145,9 +151,10 @@ class TestJobService:
         )
         result = {"nodes": [], "edges": []}
 
-        with patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)), patch(
-            "services.job_service.redis_service.cache_set", AsyncMock()
-        ) as mock_cache_set:
+        with (
+            patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)),
+            patch("services.job_service.redis_service.cache_set", AsyncMock()) as mock_cache_set,
+        ):
             await job_service.update_job_status(job_id, JobStatus.COMPLETED, result=result)
 
             # Verify status and result were updated
@@ -169,9 +176,10 @@ class TestJobService:
         )
         error = "API error occurred"
 
-        with patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)), patch(
-            "services.job_service.redis_service.cache_set", AsyncMock()
-        ) as mock_cache_set:
+        with (
+            patch.object(job_service, "get_job", AsyncMock(return_value=existing_job)),
+            patch("services.job_service.redis_service.cache_set", AsyncMock()) as mock_cache_set,
+        ):
             await job_service.update_job_status(job_id, JobStatus.FAILED, error=error)
 
             # Verify status and error were updated
@@ -184,9 +192,11 @@ class TestJobService:
     @pytest.mark.asyncio
     async def test_update_job_not_found_raises_error(self, job_service):
         """Test that updating a non-existent job raises ValueError."""
-        with patch.object(job_service, "get_job", AsyncMock(return_value=None)):
-            with pytest.raises(ValueError, match="Job .* not found"):
-                await job_service.update_job_status("nonexistent-job", JobStatus.COMPLETED)
+        with (
+            patch.object(job_service, "get_job", AsyncMock(return_value=None)),
+            pytest.raises(ValueError, match="Job .* not found"),
+        ):
+            await job_service.update_job_status("nonexistent-job", JobStatus.COMPLETED)
 
     @pytest.mark.asyncio
     async def test_get_queue_length(self, job_service):
