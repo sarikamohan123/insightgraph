@@ -15,6 +15,7 @@ All tables use UUID primary keys for better scalability and security.
 import uuid
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -38,6 +39,11 @@ class Graph(Base):
     description = Column(Text, nullable=True)  # Optional description
     source_text = Column(Text, nullable=False)  # Original input text
     graph_metadata = Column(JSON, nullable=True)  # Flexible storage for extra data
+
+    # Semantic search embedding (Phase 5)
+    # 768 dimensions for Gemini embedding-001 model
+    embedding = Column(Vector(768), nullable=True)
+
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

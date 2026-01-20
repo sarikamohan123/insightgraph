@@ -15,6 +15,7 @@ sqlalchemy==2.0.36        # SQL ORM for database operations
 alembic==1.14.0           # Database migrations
 asyncpg==0.30.0           # Async PostgreSQL driver
 greenlet==3.3.0           # Required for async SQLAlchemy
+pgvector==0.3.6           # PostgreSQL vector extension for semantic search (Phase 5)
 
 # Testing
 pytest==8.3.4             # Testing framework (compatible with pytest-asyncio)

@@ -14,7 +14,7 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 from main import app
 from middleware.api_key_auth import require_api_key
-from routers.graphs import get_extractor, get_graph_repository
+from routers.graphs import get_embedding_svc, get_extractor, get_graph_repository
 from schemas import Edge as EdgeSchema
 from schemas import ExtractResponse
 from schemas import Node as NodeSchema
@@ -35,6 +35,19 @@ class MockExtractor:
         )
 
 
+# Mock embedding service
+class MockEmbeddingService:
+    """Mock embedding service for testing."""
+
+    async def generate_embedding(self, text: str) -> list[float]:
+        """Return a mock 768-dimensional embedding."""
+        return [0.1] * 768
+
+    async def generate_query_embedding(self, query: str) -> list[float]:
+        """Return a mock query embedding."""
+        return [0.1] * 768
+
+
 # Mock API key dependency - always allows access
 async def mock_require_api_key():
     """Mock API key check that always passes."""
@@ -49,7 +62,7 @@ mock_graphs_store: dict = {}
 class MockGraphRepository:
     """Mock repository for testing without database."""
 
-    async def create_graph(self, source_text: str, extract_result, title=None, description=None):
+    async def create_graph(self, source_text: str, extract_result, title=None, description=None, embedding=None):
         """Create a mock graph."""
         graph_id = uuid.uuid4()
         graph = MagicMock()
@@ -114,6 +127,13 @@ class MockGraphRepository:
                 results.append(graph)
         return results[:limit]
 
+    async def semantic_search(self, query_embedding: list[float], limit: int = 20, similarity_threshold: float = 0.5):
+        """Mock semantic search - returns all graphs with mock similarity scores."""
+        results = []
+        for graph in list(mock_graphs_store.values())[:limit]:
+            results.append((graph, 0.8))  # Mock similarity score
+        return results
+
 
 @pytest.fixture(autouse=True)
 def setup_test_dependencies():
@@ -124,6 +144,7 @@ def setup_test_dependencies():
     # Override dependencies
     app.dependency_overrides[get_extractor] = lambda: MockExtractor()
     app.dependency_overrides[get_graph_repository] = lambda: MockGraphRepository()
+    app.dependency_overrides[get_embedding_svc] = lambda: MockEmbeddingService()
     app.dependency_overrides[require_api_key] = mock_require_api_key
 
     yield

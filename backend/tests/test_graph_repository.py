@@ -6,6 +6,7 @@ Tests CRUD operations for knowledge graphs in PostgreSQL.
 """
 
 import pytest
+import sqlalchemy as sa
 from models.database import Base, Edge, Node
 from repositories.graph_repository import GraphRepository
 from schemas import Edge as EdgeSchema
@@ -22,8 +23,10 @@ async def engine():
     """Create test database engine."""
     test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
 
-    # Create tables
+    # Create tables (enable pgvector extension first)
     async with test_engine.begin() as conn:
+        # Enable pgvector extension (required for Vector column)
+        await conn.execute(sa.text("CREATE EXTENSION IF NOT EXISTS vector"))
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
 

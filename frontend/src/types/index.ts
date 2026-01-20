@@ -80,3 +80,21 @@ export interface ForceGraphData {
   nodes: ForceGraphNode[];
   links: ForceGraphLink[];
 }
+
+// =========================================================================
+// Semantic Search Types (Phase 5)
+// =========================================================================
+
+export type SearchMode = 'keyword' | 'semantic';
+
+export interface SemanticSearchResult {
+  graph: Graph;
+  similarity_score: number;
+}
+
+export interface SemanticSearchResponse {
+  results: SemanticSearchResult[];
+  total: number;
+  query: string;
+  search_mode: string;
+}

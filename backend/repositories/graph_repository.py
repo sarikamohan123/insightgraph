@@ -10,7 +10,8 @@ Key Methods:
 - get_graph: Retrieve graph by ID
 - list_graphs: Get all graphs with pagination
 - delete_graph: Remove a graph and its nodes/edges
-- search_graphs: Find graphs by text content
+- search_graphs: Find graphs by text content (keyword search)
+- semantic_search: Find graphs by semantic similarity (Phase 5)
 
 Why use Repository Pattern?
 - Abstracts database details from business logic
@@ -49,6 +50,7 @@ class GraphRepository:
         extract_result: ExtractResponse,
         title: str | None = None,
         description: str | None = None,
+        embedding: list[float] | None = None,
     ) -> Graph:
         """
         Save an extracted knowledge graph to database.
@@ -58,6 +60,7 @@ class GraphRepository:
             extract_result: Extracted nodes and edges
             title: Optional graph title
             description: Optional graph description
+            embedding: Optional semantic embedding (768 dimensions)
 
         Returns:
             Saved Graph object with ID and timestamps
@@ -67,6 +70,7 @@ class GraphRepository:
             title=title,
             description=description,
             source_text=source_text,
+            embedding=embedding,
             graph_metadata={
                 "node_count": len(extract_result.nodes),
                 "edge_count": len(extract_result.edges),
@@ -210,3 +214,91 @@ class GraphRepository:
         """
         result = await self.session.execute(select(Graph))
         return len(result.scalars().all())
+
+    # =========================================================================
+    # Semantic Search Methods (Phase 5)
+    # =========================================================================
+
+    async def semantic_search(
+        self,
+        query_embedding: list[float],
+        limit: int = 20,
+        similarity_threshold: float = 0.5,
+    ) -> list[tuple[Graph, float]]:
+        """
+        Search graphs by semantic similarity using vector embeddings.
+
+        Uses cosine distance for similarity calculation. Results are ordered
+        by similarity (most similar first).
+
+        Args:
+            query_embedding: 768-dimensional query vector
+            limit: Max results to return
+            similarity_threshold: Minimum similarity score (0-1)
+
+        Returns:
+            List of (Graph, similarity_score) tuples
+        """
+        # Cosine similarity = 1 - cosine_distance
+        # Filter by similarity threshold and order by distance (ascending)
+        result = await self.session.execute(
+            select(
+                Graph,
+                (1 - Graph.embedding.cosine_distance(query_embedding)).label("similarity"),
+            )
+            .where(Graph.embedding.isnot(None))
+            .where((1 - Graph.embedding.cosine_distance(query_embedding)) >= similarity_threshold)
+            .order_by(Graph.embedding.cosine_distance(query_embedding))
+            .limit(limit)
+        )
+
+        rows = result.all()
+        graphs_with_scores = []
+
+        for row in rows:
+            graph = row[0]
+            similarity = float(row[1])
+            await self.session.refresh(graph, ["nodes", "edges"])
+            graphs_with_scores.append((graph, similarity))
+
+        return graphs_with_scores
+
+    async def update_embedding(self, graph_id: UUID, embedding: list[float]) -> bool:
+        """
+        Update the embedding for an existing graph.
+
+        Used for backfilling embeddings on graphs created before Phase 5.
+
+        Args:
+            graph_id: UUID of graph to update
+            embedding: 768-dimensional embedding vector
+
+        Returns:
+            True if updated, False if graph not found
+        """
+        result = await self.session.execute(select(Graph).where(Graph.id == graph_id))
+        graph = result.scalar_one_or_none()
+
+        if not graph:
+            return False
+
+        graph.embedding = embedding
+        await self.session.commit()
+        return True
+
+    async def get_graphs_without_embeddings(self, limit: int = 100) -> list[Graph]:
+        """
+        Get graphs that don't have embeddings yet.
+
+        Used for backfilling embeddings on existing data.
+
+        Args:
+            limit: Max graphs to return per batch
+
+        Returns:
+            List of graphs without embeddings (oldest first)
+        """
+        result = await self.session.execute(
+            select(Graph).where(Graph.embedding.is_(None)).order_by(Graph.created_at).limit(limit)
+        )
+        return list(result.scalars().all())

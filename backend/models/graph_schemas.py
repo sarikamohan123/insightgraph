@@ -12,9 +12,17 @@ Why separate schemas from database models?
 """
 
 from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+
+class SearchMode(str, Enum):
+    """Search mode options for graph search."""
+
+    KEYWORD = "keyword"
+    SEMANTIC = "semantic"
 
 
 class NodeResponse(BaseModel):
@@ -79,3 +87,29 @@ class GraphCreateRequest(BaseModel):
     )
     title: str | None = Field(None, description="Optional title for the graph", max_length=255)
     description: str | None = Field(None, description="Optional description", max_length=1000)
+
+
+# =========================================================================
+# Semantic Search Schemas (Phase 5)
+# =========================================================================
+
+
+class SemanticSearchResult(BaseModel):
+    """Single semantic search result with similarity score."""
+
+    graph: GraphResponse
+    similarity_score: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Cosine similarity score (0-1, higher is more similar)",
+    )
+
+
+class SemanticSearchResponse(BaseModel):
+    """Response for semantic search endpoint."""
+
+    results: list[SemanticSearchResult] = Field(..., description="Search results with scores")
+    total: int = Field(..., description="Number of results")
+    query: str = Field(..., description="Original search query")
+    search_mode: str = Field(default="semantic", description="Search mode used")

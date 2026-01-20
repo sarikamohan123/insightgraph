@@ -5,9 +5,9 @@
  * Displays a list of saved knowledge graphs with search and pagination
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { listGraphs, searchGraphs, deleteGraph } from '../services/api';
-import type { Graph } from '../types';
+import type { Graph, SearchMode } from '../types';
 
 interface GraphListProps {
   onSelectGraph: (graph: Graph) => void;
@@ -18,8 +18,27 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
   const [graphs, setGraphs] = useState<Graph[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [inputValue, setInputValue] = useState(''); // Immediate input value
+  const [searchQuery, setSearchQuery] = useState(''); // Debounced search query
+  const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [total, setTotal] = useState(0);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce input changes - wait 300ms after user stops typing
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(inputValue);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [inputValue]);
 
   const loadGraphs = async () => {
     try {
@@ -27,7 +46,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       setError(null);
 
       const response = searchQuery
-        ? await searchGraphs(searchQuery)
+        ? await searchGraphs(searchQuery, 20, searchMode)
         : await listGraphs(50, 0);
 
       setGraphs(response.graphs);
@@ -41,7 +60,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
 
   useEffect(() => {
     loadGraphs();
-  }, [searchQuery, refreshTrigger]);
+  }, [searchQuery, searchMode, refreshTrigger]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,9 +95,9 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       <div style={{ marginBottom: '1.5rem' }}>
         <input
           type="text"
-          placeholder="Search graphs..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={searchMode === 'semantic' ? 'Search by meaning...' : 'Search graphs...'}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
           style={{
             width: '100%',
             padding: '0.75rem',
@@ -87,6 +106,29 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
             fontSize: '1rem',
           }}
         />
+        {/* Search Mode Toggle */}
+        <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem', fontSize: '0.875rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="searchMode"
+              value="keyword"
+              checked={searchMode === 'keyword'}
+              onChange={() => setSearchMode('keyword')}
+            />
+            Keyword
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer' }}>
+            <input
+              type="radio"
+              name="searchMode"
+              value="semantic"
+              checked={searchMode === 'semantic'}
+              onChange={() => setSearchMode('semantic')}
+            />
+            Semantic (AI)
+          </label>
+        </div>
       </div>
 
       {/* Error */}

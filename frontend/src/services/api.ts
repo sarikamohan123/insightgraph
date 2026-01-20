@@ -11,6 +11,8 @@ import type {
   Graph,
   GraphListResponse,
   CreateGraphRequest,
+  SearchMode,
+  SemanticSearchResponse,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -97,14 +99,29 @@ export const deleteGraph = async (id: string): Promise<void> => {
 };
 
 /**
- * Search graphs by text content
+ * Search graphs by text content (keyword or semantic)
  */
 export const searchGraphs = async (
   query: string,
-  limit: number = 20
+  limit: number = 20,
+  mode: SearchMode = 'keyword'
 ): Promise<GraphListResponse> => {
   const response = await apiClient.get<GraphListResponse>('/graphs/search/', {
-    params: { q: query, limit },
+    params: { q: query, limit, mode },
+  });
+  return response.data;
+};
+
+/**
+ * Semantic search with similarity scores
+ */
+export const semanticSearchGraphs = async (
+  query: string,
+  limit: number = 20,
+  threshold: number = 0.5
+): Promise<SemanticSearchResponse> => {
+  const response = await apiClient.get<SemanticSearchResponse>('/graphs/search/semantic', {
+    params: { q: query, limit, threshold },
   });
   return response.data;
 };
