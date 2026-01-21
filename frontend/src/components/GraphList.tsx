@@ -5,7 +5,7 @@
  * Displays a list of saved knowledge graphs with search and pagination
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { listGraphs, searchGraphs, deleteGraph } from '../services/api';
 import type { Graph, SearchMode } from '../types';
 
@@ -23,6 +23,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [total, setTotal] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Debounce input changes - wait 300ms after user stops typing
   useEffect(() => {
@@ -40,7 +41,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
     };
   }, [inputValue]);
 
-  const loadGraphs = async () => {
+  const loadGraphs = useCallback(async () => {
+    // Check if input was focused before loading
+    const wasInputFocused = document.activeElement === inputRef.current;
+
     try {
       setLoading(true);
       setError(null);
@@ -55,12 +59,16 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       setError(err.response?.data?.detail || err.message || 'Failed to load graphs');
     } finally {
       setLoading(false);
+      // Restore focus to input if it was focused before
+      if (wasInputFocused && inputRef.current) {
+        inputRef.current.focus();
+      }
     }
-  };
+  }, [searchQuery, searchMode]);
 
   useEffect(() => {
     loadGraphs();
-  }, [searchQuery, searchMode, refreshTrigger]);
+  }, [loadGraphs, refreshTrigger]);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -81,19 +89,12 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
     }
   };
 
-  if (loading && graphs.length === 0) {
-    return (
-      <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-        Loading graphs...
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* Search */}
+      {/* Search - always visible */}
       <div style={{ marginBottom: '1.5rem' }}>
         <input
+          ref={inputRef}
           type="text"
           placeholder={searchMode === 'semantic' ? 'Search by meaning...' : 'Search graphs...'}
           value={inputValue}
@@ -147,13 +148,13 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
         </div>
       )}
 
-      {/* Count */}
+      {/* Count / Loading */}
       <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
-        {total} graph{total !== 1 ? 's' : ''} found
+        {loading ? 'Searching...' : `${total} graph${total !== 1 ? 's' : ''} found`}
       </p>
 
       {/* List */}
-      {graphs.length === 0 ? (
+      {!loading && graphs.length === 0 ? (
         <div
           style={{
             textAlign: 'center',
