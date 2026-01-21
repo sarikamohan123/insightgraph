@@ -16,12 +16,37 @@ import uuid
 from datetime import datetime
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
 Base = declarative_base()
+
+
+class User(Base):
+    """
+    User account for authentication.
+
+    Stores user credentials and profile information.
+    """
+
+    __tablename__ = "users"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    graphs = relationship("Graph", back_populates="owner", cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<User(id={self.id}, username={self.username}, email={self.email})>"
 
 
 class Graph(Base):
@@ -40,6 +65,10 @@ class Graph(Base):
     source_text = Column(Text, nullable=False)  # Original input text
     graph_metadata = Column(JSON, nullable=True)  # Flexible storage for extra data
 
+    # Owner (Phase 6 - Authentication)
+    # Nullable for backward compatibility with existing graphs
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+
     # Semantic search embedding (Phase 5)
     # 768 dimensions for Gemini embedding-001 model
     embedding = Column(Vector(768), nullable=True)
@@ -48,6 +77,7 @@ class Graph(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
+    owner = relationship("User", back_populates="graphs")
     nodes = relationship("Node", back_populates="graph", cascade="all, delete-orphan")
     edges = relationship("Edge", back_populates="graph", cascade="all, delete-orphan")
 

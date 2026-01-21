@@ -9,25 +9,36 @@ import { useState } from 'react';
 import { GraphVisualization } from './components/GraphVisualization';
 import { GraphForm } from './components/GraphForm';
 import { GraphList } from './components/GraphList';
-import { ApiKeySettings } from './components/ApiKeySettings';
+import { AuthModal } from './components/AuthModal';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { createGraph } from './services/api';
 import type { Graph, CreateGraphRequest } from './types';
 import './App.css';
 
-function App() {
+function AppContent() {
   const [selectedGraph, setSelectedGraph] = useState<Graph | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleCreateGraph = async (request: CreateGraphRequest) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
+      throw new Error('Please login to create graphs');
+    }
+
     try {
       setLoading(true);
       const graph = await createGraph(request);
       setSelectedGraph(graph);
-      setRefreshTrigger(prev => prev + 1); // Trigger list refresh
+      setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
       if (error.response?.status === 401) {
-        throw new Error('Authentication required. Please set your API key above.');
+        setShowAuthModal(true);
+        throw new Error('Please login to create graphs');
       }
       throw error;
     } finally {
@@ -43,17 +54,110 @@ function App() {
     <div className="app">
       {/* Header */}
       <header className="header">
-        <div className="header-content">
-          <h1>InsightGraph</h1>
-          <p>Transform text into interactive knowledge graphs</p>
+        <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h1>InsightGraph</h1>
+            <p>Transform text into interactive knowledge graphs</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {isAuthenticated ? (
+              <>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '0.375rem',
+                }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                    fontWeight: '600',
+                  }}>
+                    {user?.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span style={{ color: 'white', fontSize: '0.875rem' }}>
+                    {user?.username}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  style={{
+                    padding: '0.5rem 0.75rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '0.375rem',
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setShowAuthModal(true)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: 'white',
+                  color: '#3b82f6',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Login / Sign Up
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="main">
         <div className="container">
-          {/* API Key Settings */}
-          <ApiKeySettings />
+          {/* Auth Status Banner */}
+          {!isAuthenticated && (
+            <div style={{
+              backgroundColor: '#fef3c7',
+              border: '1px solid #fcd34d',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}>
+              <span style={{ color: '#92400e' }}>
+                Login to create and save your own knowledge graphs
+              </span>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Login
+              </button>
+            </div>
+          )}
 
           {/* Two Column Layout */}
           <div className="grid">
@@ -118,7 +222,18 @@ function App() {
           </a>
         </p>
       </footer>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

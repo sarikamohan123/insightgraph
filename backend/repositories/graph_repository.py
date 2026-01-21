@@ -51,6 +51,7 @@ class GraphRepository:
         title: str | None = None,
         description: str | None = None,
         embedding: list[float] | None = None,
+        user_id: UUID | None = None,
     ) -> Graph:
         """
         Save an extracted knowledge graph to database.
@@ -61,6 +62,7 @@ class GraphRepository:
             title: Optional graph title
             description: Optional graph description
             embedding: Optional semantic embedding (768 dimensions)
+            user_id: Optional owner's user ID (Phase 6)
 
         Returns:
             Saved Graph object with ID and timestamps
@@ -71,6 +73,7 @@ class GraphRepository:
             description=description,
             source_text=source_text,
             embedding=embedding,
+            user_id=user_id,
             graph_metadata={
                 "node_count": len(extract_result.nodes),
                 "edge_count": len(extract_result.edges),

@@ -13,6 +13,9 @@ import type {
   CreateGraphRequest,
   SearchMode,
   SemanticSearchResponse,
+  User,
+  Token,
+  RegisterRequest,
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -140,4 +143,79 @@ export const getStats = async (): Promise<any> => {
 export const healthCheck = async (): Promise<{ status: string; extractor: string }> => {
   const response = await apiClient.get('/health');
   return response.data;
+};
+
+// =========================================================================
+// Authentication API (Phase 6)
+// =========================================================================
+
+// JWT token management
+let jwtToken: string | null = null;
+
+export const setJwtToken = (token: string | null) => {
+  jwtToken = token;
+  if (token) {
+    localStorage.setItem('insightgraph_jwt', token);
+  } else {
+    localStorage.removeItem('insightgraph_jwt');
+  }
+};
+
+export const getJwtToken = (): string | null => {
+  if (!jwtToken) {
+    jwtToken = localStorage.getItem('insightgraph_jwt');
+  }
+  return jwtToken;
+};
+
+// Add JWT token to requests if available
+apiClient.interceptors.request.use((config) => {
+  const token = getJwtToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+
+/**
+ * Register a new user
+ */
+export const register = async (data: RegisterRequest): Promise<User> => {
+  const response = await apiClient.post<User>('/auth/register', data);
+  return response.data;
+};
+
+/**
+ * Login and get JWT token
+ */
+export const login = async (email: string, password: string): Promise<Token> => {
+  // OAuth2 uses form data with "username" field (which is actually email)
+  const formData = new URLSearchParams();
+  formData.append('username', email);
+  formData.append('password', password);
+
+  const response = await apiClient.post<Token>('/auth/login', formData, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+
+  // Store the token
+  setJwtToken(response.data.access_token);
+  return response.data;
+};
+
+/**
+ * Get current user profile
+ */
+export const getCurrentUser = async (): Promise<User> => {
+  const response = await apiClient.get<User>('/auth/me');
+  return response.data;
+};
+
+/**
+ * Logout - clear stored token
+ */
+export const logout = () => {
+  setJwtToken(null);
 };

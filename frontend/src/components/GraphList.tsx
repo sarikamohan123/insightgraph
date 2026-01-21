@@ -22,6 +22,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
   const [searchQuery, setSearchQuery] = useState(''); // Debounced search query
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [total, setTotal] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -70,21 +71,24 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
     loadGraphs();
   }, [loadGraphs, refreshTrigger]);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteClick = (graph: Graph, e: React.MouseEvent) => {
     e.stopPropagation();
+    setDeleteConfirm({ id: graph.id, title: graph.title || 'Untitled Graph' });
+  };
 
-    if (!confirm('Are you sure you want to delete this graph?')) {
-      return;
-    }
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return;
 
     try {
-      await deleteGraph(id);
+      await deleteGraph(deleteConfirm.id);
+      setDeleteConfirm(null);
       await loadGraphs(); // Refresh list
     } catch (err: any) {
+      setDeleteConfirm(null);
       if (err.response?.status === 401) {
-        alert('Authentication required. Please set your API key.');
+        setError('Authentication required. Please login to delete graphs.');
       } else {
-        alert(err.response?.data?.detail || 'Failed to delete graph');
+        setError(err.response?.data?.detail || 'Failed to delete graph');
       }
     }
   };
@@ -208,7 +212,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
                   </div>
                 </div>
                 <button
-                  onClick={(e) => handleDelete(graph.id, e)}
+                  onClick={(e) => handleDeleteClick(graph, e)}
                   style={{
                     padding: '0.5rem 1rem',
                     backgroundColor: '#fee2e2',
@@ -231,6 +235,70 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setDeleteConfirm(null)}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '0.5rem',
+              padding: '1.5rem',
+              maxWidth: '400px',
+              width: '90%',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Delete Graph</h3>
+            <p style={{ margin: '0 0 1.5rem 0', color: '#6b7280' }}>
+              Are you sure you want to delete "{deleteConfirm.title}"? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#f3f4f6',
+                  color: '#374151',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#dc2626',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer',
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
