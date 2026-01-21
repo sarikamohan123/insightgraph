@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Security Configuration (Phase 3)
     api_key: str | None = None  # Optional - if not set, endpoints are public
 
+    # JWT Authentication (Phase 6)
+    jwt_secret_key: str = "change-me-in-production-use-openssl-rand-hex-32"
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 10080  # 7 days
+
     # Database Configuration (Phase 3)
     database_url: str = "postgresql://dev:devpass@localhost:5432/insightgraph"
 

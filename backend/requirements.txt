@@ -23,6 +23,12 @@ pytest-asyncio==0.24.0    # Async test support
 pytest-mock==3.14.0       # Mocking utilities
 pytest-cov==6.0.0         # Code coverage reports
 
+# Authentication (Phase 6)
+python-jose[cryptography]==3.3.0  # JWT token handling
+bcrypt==4.2.1                     # Password hashing
+python-multipart==0.0.18          # Form data parsing for login
+email-validator==2.3.0            # Email validation for Pydantic
+
 # Development Tools
 httpx==0.28.1             # HTTP client for testing APIs
 ruff==0.14.11             # Fast Python linter & formatter (replaces Black, Flake8, isort)

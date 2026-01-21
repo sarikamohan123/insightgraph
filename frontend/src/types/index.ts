@@ -98,3 +98,31 @@ export interface SemanticSearchResponse {
   query: string;
   search_mode: string;
 }
+
+// =========================================================================
+// Authentication Types (Phase 6)
+// =========================================================================
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface LoginRequest {
+  username: string; // Actually email, but OAuth2 spec uses "username"
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  username: string;
+  password: string;
+}
+
+export interface Token {
+  access_token: string;
+  token_type: string;
+}

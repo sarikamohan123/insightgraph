@@ -21,7 +21,7 @@ from extractors.base import BaseExtractor
 from extractors.llm_based import LLMExtractor
 from extractors.rule_based import RuleBasedExtractor
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from middleware.api_key_auth import require_api_key
+from models.database import User
 from models.graph_schemas import (
     EdgeResponse,
     GraphCreateRequest,
@@ -33,6 +33,7 @@ from models.graph_schemas import (
     SemanticSearchResult,
 )
 from repositories.graph_repository import GraphRepository
+from routers.auth import get_current_user, require_current_user
 from services.db_service import get_db_session
 from services.embedding_service import EmbeddingService, get_embedding_service
 from services.llm_service import GeminiService
@@ -78,16 +79,16 @@ def get_embedding_svc() -> EmbeddingService:
     summary="Create a new knowledge graph",
     responses={
         201: {"description": "Graph created successfully"},
-        401: {"description": "Authentication required - provide X-API-Key header"},
+        401: {"description": "Authentication required - provide Bearer token"},
         500: {"description": "Extraction or database error"},
     },
-    dependencies=[Depends(require_api_key)],  # Require authentication
 )
 async def create_graph(
     req: GraphCreateRequest,
     extractor: Annotated[BaseExtractor, Depends(get_extractor)],
     repo: Annotated[GraphRepository, Depends(get_graph_repository)],
     embedding_service: Annotated[EmbeddingService, Depends(get_embedding_svc)],
+    current_user: Annotated[User, Depends(require_current_user)],
 ):
     """
     Extract entities and relationships from text and save to database.
@@ -119,13 +120,14 @@ async def create_graph(
             # Log but don't fail if embedding generation fails
             print(f"[WARN] Embedding generation failed (graph will be saved without): {e}")
 
-        # Save to database with embedding
+        # Save to database with embedding and owner
         graph = await repo.create_graph(
             source_text=req.text,
             extract_result=extract_result,
             title=req.title,
             description=req.description,
             embedding=embedding,
+            user_id=current_user.id,
         )
 
         return GraphResponse(
@@ -261,33 +263,53 @@ async def get_graph(
     summary="Delete a knowledge graph",
     responses={
         204: {"description": "Graph deleted successfully"},
-        401: {"description": "Authentication required - provide X-API-Key header"},
+        401: {"description": "Authentication required - provide Bearer token"},
+        403: {"description": "Not authorized to delete this graph"},
         404: {"description": "Graph not found"},
     },
-    dependencies=[Depends(require_api_key)],  # Require authentication
 )
 async def delete_graph(
     graph_id: UUID,
     repo: Annotated[GraphRepository, Depends(get_graph_repository)],
+    current_user: Annotated[User, Depends(require_current_user)],
 ):
     """
     Delete a knowledge graph and all its nodes and edges.
 
+    Users can only delete their own graphs.
+
     Args:
         graph_id: UUID of the graph to delete
         repo: Injected graph repository
+        current_user: Authenticated user
 
     Returns:
         No content (204) on success
     """
     try:
-        deleted = await repo.delete_graph(graph_id)
+        # First check if graph exists and user owns it
+        graph = await repo.get_graph(graph_id)
 
-        if not deleted:
+        if not graph:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Graph {graph_id} not found",
             )
+
+        # Check ownership - only the owner can delete their graph
+        # Legacy graphs (no owner) cannot be deleted by regular users
+        if graph.user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="This is a legacy graph with no owner. Cannot be deleted.",
+            )
+        if graph.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to delete this graph",
+            )
+
+        await repo.delete_graph(graph_id)
 
     except HTTPException:
         raise

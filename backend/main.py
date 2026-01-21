@@ -18,7 +18,7 @@ from config import settings
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.rate_limiter import get_rate_limit_status
-from routers import extraction, graphs, jobs
+from routers import auth, extraction, graphs, jobs
 from services.cache_service import cache_service
 from services.db_service import check_db_connection, close_db
 from services.job_service import job_service
@@ -48,6 +48,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router)  # /auth (Phase 6)
 app.include_router(extraction.router)  # /extract
 app.include_router(jobs.router)  # /jobs
 app.include_router(graphs.router)  # /graphs
@@ -160,7 +161,7 @@ async def startup_event():
     print(f"Redis: {'Connected' if redis_healthy else 'Not connected'}")
 
     print(f"Extractor: {'LLM (Gemini)' if settings.use_llm_extractor else 'Rule-based'}")
-    print(f"Authentication: {'Enabled' if settings.api_key else 'Disabled (dev mode)'}")
+    print("Authentication: JWT (register at /auth/register, login at /auth/login)")
     print("Docs: http://localhost:8000/docs")
     print("=" * 60 + "\n")
 
