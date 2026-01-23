@@ -77,12 +77,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f9fafb',
-          border: '1px solid #e5e7eb',
+          backgroundColor: 'var(--bg-tertiary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '8px',
         }}
       >
-        <p style={{ color: '#6b7280' }}>No graph to display</p>
+        <p style={{ color: 'var(--text-muted)' }}>No graph to display</p>
       </div>
     );
   }
@@ -91,7 +91,7 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
   return (
     <div>
-      <div ref={containerRef} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
         <ForceGraph2D
           ref={fgRef}
           graphData={graphData}
@@ -145,12 +145,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   );
 };
 
-// Export button style
+// Export button style - Using CSS variables for theme support
 const exportButtonStyle: React.CSSProperties = {
   padding: '0.5rem 1rem',
-  backgroundColor: '#f3f4f6',
-  color: '#374151',
-  border: '1px solid #d1d5db',
+  backgroundColor: 'var(--btn-secondary-bg)',
+  color: 'var(--btn-secondary-text)',
+  border: '1px solid var(--btn-secondary-border)',
   borderRadius: '0.375rem',
   fontSize: '0.875rem',
   cursor: 'pointer',

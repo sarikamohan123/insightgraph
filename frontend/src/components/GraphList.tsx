@@ -106,9 +106,11 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
           style={{
             width: '100%',
             padding: '0.75rem',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--input-border)',
             borderRadius: '0.375rem',
             fontSize: '1rem',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
           }}
         />
         {/* Search Mode Toggle */}
@@ -142,10 +144,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
           style={{
             marginBottom: '1rem',
             padding: '0.75rem',
-            backgroundColor: '#fee2e2',
-            border: '1px solid #fecaca',
+            backgroundColor: 'var(--error-bg)',
+            border: '1px solid var(--error-border)',
             borderRadius: '0.375rem',
-            color: '#991b1b',
+            color: 'var(--error-text)',
           }}
         >
           {error}
@@ -153,7 +155,7 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       )}
 
       {/* Count / Loading */}
-      <p style={{ marginBottom: '1rem', color: '#6b7280', fontSize: '0.875rem' }}>
+      <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
         {loading ? 'Searching...' : `${total} graph${total !== 1 ? 's' : ''} found`}
       </p>
 
@@ -163,9 +165,9 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
           style={{
             textAlign: 'center',
             padding: '3rem',
-            backgroundColor: '#f9fafb',
+            backgroundColor: 'var(--bg-tertiary)',
             borderRadius: '0.5rem',
-            color: '#6b7280',
+            color: 'var(--text-muted)',
           }}
         >
           <p>No graphs found.</p>
@@ -181,31 +183,31 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
               onClick={() => onSelectGraph(graph)}
               style={{
                 padding: '1rem',
-                border: '1px solid #e5e7eb',
+                border: '1px solid var(--border-color)',
                 borderRadius: '0.5rem',
                 cursor: 'pointer',
                 transition: 'all 0.2s',
-                backgroundColor: 'white',
+                backgroundColor: 'var(--bg-secondary)',
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-                e.currentTarget.style.borderColor = '#3b82f6';
+                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)';
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.borderColor = '#e5e7eb';
+                e.currentTarget.style.backgroundColor = 'var(--bg-secondary)';
+                e.currentTarget.style.borderColor = 'var(--border-color)';
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: '600' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>
                     {graph.title || 'Untitled Graph'}
                   </h3>
-                  <p style={{ margin: '0 0 0.5rem 0', color: '#6b7280', fontSize: '0.875rem' }}>
+                  <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     {graph.source_text.substring(0, 150)}
                     {graph.source_text.length > 150 ? '...' : ''}
                   </p>
-                  <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#9ca3af' }}>
+                  <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: 'var(--text-light)' }}>
                     <span>{graph.nodes.length} nodes</span>
                     <span>{graph.edges.length} edges</span>
                     <span>{new Date(graph.created_at).toLocaleDateString()}</span>
@@ -215,8 +217,8 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
                   onClick={(e) => handleDeleteClick(graph, e)}
                   style={{
                     padding: '0.5rem 1rem',
-                    backgroundColor: '#fee2e2',
-                    color: '#991b1b',
+                    backgroundColor: 'var(--error-bg)',
+                    color: 'var(--error-text)',
                     border: 'none',
                     borderRadius: '0.375rem',
                     fontSize: '0.875rem',
@@ -224,10 +226,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
                     marginLeft: '1rem',
                   }}
                   onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fecaca';
+                    e.currentTarget.style.backgroundColor = 'var(--error-border)';
                   }}
                   onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#fee2e2';
+                    e.currentTarget.style.backgroundColor = 'var(--error-bg)';
                   }}
                 >
                   Delete
@@ -257,17 +259,17 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
         >
           <div
             style={{
-              backgroundColor: 'white',
+              backgroundColor: 'var(--bg-secondary)',
               borderRadius: '0.5rem',
               padding: '1.5rem',
               maxWidth: '400px',
               width: '90%',
-              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 4px 6px var(--shadow-color)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Delete Graph</h3>
-            <p style={{ margin: '0 0 1.5rem 0', color: '#6b7280' }}>
+            <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem', color: 'var(--text-primary)' }}>Delete Graph</h3>
+            <p style={{ margin: '0 0 1.5rem 0', color: 'var(--text-muted)' }}>
               Are you sure you want to delete "{deleteConfirm.title}"? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -275,8 +277,8 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
                 onClick={() => setDeleteConfirm(null)}
                 style={{
                   padding: '0.5rem 1rem',
-                  backgroundColor: '#f3f4f6',
-                  color: '#374151',
+                  backgroundColor: 'var(--btn-secondary-bg)',
+                  color: 'var(--btn-secondary-text)',
                   border: 'none',
                   borderRadius: '0.375rem',
                   cursor: 'pointer',
