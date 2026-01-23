@@ -172,7 +172,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   );
 };
 
-// Styles
+// Styles - Using CSS variables for theme support
 const overlayStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0,
@@ -187,12 +187,12 @@ const overlayStyle: React.CSSProperties = {
 };
 
 const modalStyle: React.CSSProperties = {
-  backgroundColor: 'white',
+  backgroundColor: 'var(--bg-secondary)',
   borderRadius: '0.5rem',
   padding: '1.5rem',
   width: '100%',
   maxWidth: '400px',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+  boxShadow: '0 4px 6px var(--shadow-color)',
 };
 
 const headerStyle: React.CSSProperties = {
@@ -200,6 +200,7 @@ const headerStyle: React.CSSProperties = {
   justifyContent: 'space-between',
   alignItems: 'center',
   marginBottom: '1.5rem',
+  color: 'var(--text-primary)',
 };
 
 const closeButtonStyle: React.CSSProperties = {
@@ -207,13 +208,13 @@ const closeButtonStyle: React.CSSProperties = {
   border: 'none',
   fontSize: '1.5rem',
   cursor: 'pointer',
-  color: '#6b7280',
+  color: 'var(--text-muted)',
 };
 
 const errorStyle: React.CSSProperties = {
-  backgroundColor: '#fee2e2',
-  border: '1px solid #fecaca',
-  color: '#991b1b',
+  backgroundColor: 'var(--error-bg)',
+  border: '1px solid var(--error-border)',
+  color: 'var(--error-text)',
   padding: '0.75rem',
   borderRadius: '0.375rem',
   marginBottom: '1rem',
@@ -235,19 +236,21 @@ const fieldStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: '0.875rem',
   fontWeight: '500',
-  color: '#374151',
+  color: 'var(--text-secondary)',
 };
 
 const inputStyle: React.CSSProperties = {
   padding: '0.75rem',
-  border: '1px solid #d1d5db',
+  border: '1px solid var(--input-border)',
   borderRadius: '0.375rem',
   fontSize: '1rem',
+  backgroundColor: 'var(--input-bg)',
+  color: 'var(--text-primary)',
 };
 
 const submitButtonStyle: React.CSSProperties = {
   padding: '0.75rem',
-  backgroundColor: '#3b82f6',
+  backgroundColor: 'var(--accent-primary)',
   color: 'white',
   border: 'none',
   borderRadius: '0.375rem',
@@ -260,14 +263,14 @@ const submitButtonStyle: React.CSSProperties = {
 const switchStyle: React.CSSProperties = {
   textAlign: 'center',
   marginTop: '1rem',
-  color: '#6b7280',
+  color: 'var(--text-muted)',
   fontSize: '0.875rem',
 };
 
 const linkButtonStyle: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: '#3b82f6',
+  color: 'var(--accent-primary)',
   cursor: 'pointer',
   textDecoration: 'underline',
   fontSize: '0.875rem',

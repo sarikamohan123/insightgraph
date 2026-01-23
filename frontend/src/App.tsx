@@ -11,6 +11,7 @@ import { GraphForm } from './components/GraphForm';
 import { GraphList } from './components/GraphList';
 import { AuthModal } from './components/AuthModal';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { createGraph } from './services/api';
 import type { Graph, CreateGraphRequest } from './types';
 import './App.css';
@@ -22,6 +23,7 @@ function AppContent() {
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const { user, isAuthenticated, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
 
   const handleCreateGraph = async (request: CreateGraphRequest) => {
     // Check if user is authenticated
@@ -60,6 +62,15 @@ function AppContent() {
             <p>Transform text into interactive knowledge graphs</p>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="theme-toggle"
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+
             {isAuthenticated ? (
               <>
                 <div style={{
@@ -130,8 +141,8 @@ function AppContent() {
           {/* Auth Status Banner */}
           {!isAuthenticated && (
             <div style={{
-              backgroundColor: '#fef3c7',
-              border: '1px solid #fcd34d',
+              backgroundColor: 'var(--warning-bg)',
+              border: '1px solid var(--warning-border)',
               borderRadius: '0.5rem',
               padding: '1rem',
               marginBottom: '1.5rem',
@@ -139,14 +150,14 @@ function AppContent() {
               justifyContent: 'space-between',
               alignItems: 'center',
             }}>
-              <span style={{ color: '#92400e' }}>
+              <span style={{ color: 'var(--warning-text)' }}>
                 Login to create and save your own knowledge graphs
               </span>
               <button
                 onClick={() => setShowAuthModal(true)}
                 style={{
                   padding: '0.5rem 1rem',
-                  backgroundColor: '#3b82f6',
+                  backgroundColor: 'var(--accent-primary)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '0.375rem',
@@ -189,7 +200,7 @@ function AppContent() {
                   <p style={{
                     marginTop: '0.5rem',
                     marginBottom: '1rem',
-                    color: '#6b7280',
+                    color: 'var(--text-muted)',
                     fontSize: '0.875rem',
                   }}>
                     {selectedGraph.description}
@@ -201,7 +212,7 @@ function AppContent() {
                   height={600}
                 />
                 {selectedGraph && (
-                  <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                  <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                     <p><strong>Nodes:</strong> {selectedGraph.nodes.length}</p>
                     <p><strong>Edges:</strong> {selectedGraph.edges.length}</p>
                     <p><strong>Created:</strong> {new Date(selectedGraph.created_at).toLocaleString()}</p>
@@ -231,9 +242,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

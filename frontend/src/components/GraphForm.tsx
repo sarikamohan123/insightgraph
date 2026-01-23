@@ -55,7 +55,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
             display: 'block',
             marginBottom: '0.5rem',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           Title (optional)
@@ -70,9 +70,11 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
           style={{
             width: '100%',
             padding: '0.5rem',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--input-border)',
             borderRadius: '0.375rem',
             fontSize: '1rem',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
           }}
         />
       </div>
@@ -84,7 +86,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
             display: 'block',
             marginBottom: '0.5rem',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           Text to analyze *
@@ -100,14 +102,16 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
           style={{
             width: '100%',
             padding: '0.5rem',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--input-border)',
             borderRadius: '0.375rem',
             fontSize: '1rem',
             fontFamily: 'inherit',
             resize: 'vertical',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
           }}
         />
-        <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: '#6b7280' }}>
+        <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
           {text.length} / 10,000 characters
         </p>
       </div>
@@ -119,7 +123,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
             display: 'block',
             marginBottom: '0.5rem',
             fontWeight: '500',
-            color: '#374151',
+            color: 'var(--text-secondary)',
           }}
         >
           Description (optional)
@@ -134,11 +138,13 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
           style={{
             width: '100%',
             padding: '0.5rem',
-            border: '1px solid #d1d5db',
+            border: '1px solid var(--input-border)',
             borderRadius: '0.375rem',
             fontSize: '1rem',
             fontFamily: 'inherit',
             resize: 'vertical',
+            backgroundColor: 'var(--input-bg)',
+            color: 'var(--text-primary)',
           }}
         />
       </div>
@@ -148,10 +154,10 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
           style={{
             marginBottom: '1rem',
             padding: '0.75rem',
-            backgroundColor: '#fee2e2',
-            border: '1px solid #fecaca',
+            backgroundColor: 'var(--error-bg)',
+            border: '1px solid var(--error-border)',
             borderRadius: '0.375rem',
-            color: '#991b1b',
+            color: 'var(--error-text)',
           }}
         >
           {error}
@@ -163,7 +169,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
         disabled={loading || !text.trim()}
         style={{
           padding: '0.75rem 1.5rem',
-          backgroundColor: loading ? '#9ca3af' : '#3b82f6',
+          backgroundColor: loading ? 'var(--text-light)' : 'var(--accent-primary)',
           color: 'white',
           border: 'none',
           borderRadius: '0.375rem',
@@ -174,12 +180,12 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
         }}
         onMouseOver={(e) => {
           if (!loading && text.trim()) {
-            e.currentTarget.style.backgroundColor = '#2563eb';
+            e.currentTarget.style.backgroundColor = 'var(--accent-hover)';
           }
         }}
         onMouseOut={(e) => {
           if (!loading) {
-            e.currentTarget.style.backgroundColor = '#3b82f6';
+            e.currentTarget.style.backgroundColor = 'var(--accent-primary)';
           }
         }}
       >
