@@ -56,12 +56,12 @@ function AppContent() {
     <div className="app">
       {/* Header */}
       <header className="header">
-        <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
+        <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ minWidth: '200px' }}>
             <h1>InsightGraph</h1>
-            <p>Transform text into interactive knowledge graphs</p>
+            <p className="hide-mobile">Transform text into interactive knowledge graphs</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -73,7 +73,8 @@ function AppContent() {
 
             {isAuthenticated ? (
               <>
-                <div style={{
+                {/* Full user info - hidden on mobile */}
+                <div className="hide-mobile" style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.5rem',
@@ -98,6 +99,21 @@ function AppContent() {
                   <span style={{ color: 'white', fontSize: '0.875rem' }}>
                     {user?.username}
                   </span>
+                </div>
+                {/* Avatar only - shown on mobile */}
+                <div className="show-mobile" style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: '#3b82f6',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: '0.875rem',
+                  fontWeight: '600',
+                }}>
+                  {user?.username?.charAt(0).toUpperCase()}
                 </div>
                 <button
                   onClick={logout}
@@ -128,7 +144,7 @@ function AppContent() {
                   fontSize: '0.875rem',
                 }}
               >
-                Login / Sign Up
+                Login
               </button>
             )}
           </div>
@@ -140,7 +156,7 @@ function AppContent() {
         <div className="container">
           {/* Auth Status Banner */}
           {!isAuthenticated && (
-            <div style={{
+            <div className="auth-banner" style={{
               backgroundColor: 'var(--warning-bg)',
               border: '1px solid var(--warning-border)',
               borderRadius: '0.5rem',
@@ -149,8 +165,10 @@ function AppContent() {
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
             }}>
-              <span style={{ color: 'var(--warning-text)' }}>
+              <span style={{ color: 'var(--warning-text)', flex: '1', minWidth: '200px' }}>
                 Login to create and save your own knowledge graphs
               </span>
               <button
@@ -163,6 +181,7 @@ function AppContent() {
                   borderRadius: '0.375rem',
                   cursor: 'pointer',
                   fontSize: '0.875rem',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Login
@@ -208,8 +227,8 @@ function AppContent() {
                 )}
                 <GraphVisualization
                   graph={selectedGraph}
-                  width={600}
-                  height={600}
+                  width={800}
+                  height={500}
                 />
                 {selectedGraph && (
                   <div style={{ marginTop: '1rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>

@@ -6,7 +6,7 @@
  * with export capabilities (JSON, PNG, SVG)
  */
 
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useState, useEffect } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import type { ForceGraphData, Graph } from '../types';
 import { exportAsJSON, exportAsPNG, exportAsSVG } from '../utils/exportGraph';
@@ -27,11 +27,30 @@ const NODE_COLORS: Record<string, string> = {
 
 export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   graph,
-  width = 800,
-  height = 600,
+  width: propWidth = 800,
+  height: propHeight = 600,
 }) => {
   const fgRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: propWidth, height: propHeight });
+
+  // Responsive sizing - measure container and update dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        // Use container width, but respect the prop as max width
+        const newWidth = Math.min(containerWidth, propWidth);
+        // Maintain aspect ratio or use a minimum height
+        const newHeight = Math.max(300, Math.min(newWidth, propHeight));
+        setDimensions({ width: newWidth, height: newHeight });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, [propWidth, propHeight]);
 
   // Convert backend graph format to force-graph format
   const convertToForceGraph = (g: Graph): ForceGraphData => {
@@ -65,15 +84,17 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   }, [graph]);
 
   const handleExportSVG = useCallback(() => {
-    if (graph) exportAsSVG(graph, width, height);
-  }, [graph, width, height]);
+    if (graph) exportAsSVG(graph, dimensions.width, dimensions.height);
+  }, [graph, dimensions.width, dimensions.height]);
 
   if (!graph) {
     return (
       <div
+        ref={containerRef}
         style={{
-          width,
-          height,
+          width: '100%',
+          minHeight: '300px',
+          height: dimensions.height,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -91,12 +112,12 @@ export const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
   return (
     <div>
-      <div ref={containerRef} style={{ border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ width: '100%', border: '1px solid var(--border-color)', borderRadius: '8px', overflow: 'hidden' }}>
         <ForceGraph2D
           ref={fgRef}
           graphData={graphData}
-          width={width}
-          height={height}
+          width={dimensions.width}
+          height={dimensions.height}
           nodeLabel={(node: any) => `${node.name} (${node.type}) - ${(node.confidence * 100).toFixed(0)}%`}
           nodeColor={(node: any) => NODE_COLORS[node.type] || NODE_COLORS.default}
           nodeRelSize={6}
