@@ -20,9 +20,9 @@
 
 ---
 
-## Current Status: Phase 5 - Semantic Search ✅ COMPLETED!
+## Current Status: Phase 6 - JWT Authentication ✅ COMPLETED!
 
-**Last Updated:** 2026-01-20
+**Last Updated:** 2026-01-21
 
 ### ✅ Completed (Phase 2 - Rate Limiting & Request Queuing)
 **Completion Date:** 2026-01-10
@@ -402,14 +402,100 @@ Phase 5 implemented semantic search using pgvector and Gemini embeddings for int
 - Scalable vector search with ivfflat index
 - Dual-mode search for flexibility
 
+### ✅ Completed (Phase 6 - JWT Authentication)
+**Completion Date:** 2026-01-21
+
+Phase 6 implemented JWT-based authentication with a "public read, protected write" model.
+
+**Backend Authentication:**
+- [x] User model (models/database.py)
+  - UUID primary key
+  - Email (unique, indexed)
+  - Username (unique, indexed)
+  - Hashed password (bcrypt)
+  - is_active flag
+  - Timestamps (created_at, updated_at)
+- [x] Auth service (services/auth_service.py)
+  - bcrypt password hashing
+  - JWT token creation (7-day expiration)
+  - Token decoding and validation
+  - User lookup by email/username/id
+- [x] Auth router (routers/auth.py)
+  - POST /auth/register - Create new user
+  - POST /auth/login - OAuth2 password flow, returns JWT
+  - GET /auth/me - Get current user profile
+  - Dependencies: get_current_user, require_current_user
+- [x] Database migration (d1a2b3c4d5e6_add_user_authentication.py)
+  - Creates users table
+  - Adds user_id foreign key to graphs table
+
+**Security Model:**
+- [x] Public read access (GET endpoints)
+  - Anyone can view graphs (good for recruiters/portfolio)
+  - No authentication required for listing/viewing
+- [x] Protected write access (POST, DELETE endpoints)
+  - Requires valid JWT Bearer token
+  - Users can only delete their own graphs
+  - Legacy graphs (no owner) cannot be deleted
+
+**Frontend Authentication:**
+- [x] AuthContext (contexts/AuthContext.tsx)
+  - Global authentication state
+  - Login, register, logout methods
+  - Auto-check session on page load
+  - Error handling and loading states
+- [x] AuthModal (components/AuthModal.tsx)
+  - Login/Register form with tab switching
+  - Form validation
+  - Error display
+- [x] API integration (services/api.ts)
+  - JWT token storage in localStorage
+  - Automatic token injection via axios interceptor
+  - Auth API functions (login, register, logout, getCurrentUser)
+- [x] App.tsx updates
+  - AuthProvider wrapper
+  - User avatar with first initial
+  - Username display in header
+  - Login/Logout buttons
+  - Auth status banner for guests
+
+**UI Improvements:**
+- [x] Custom delete confirmation modal (replaces browser confirm())
+- [x] Professional user display with avatar
+- [x] Error messages for auth failures
+
+**Dependencies Added:**
+- [x] python-jose[cryptography]==3.3.0 (JWT handling)
+- [x] bcrypt==4.2.1 (password hashing)
+- [x] python-multipart==0.0.18 (form data parsing)
+- [x] email-validator==2.3.0 (Pydantic EmailStr)
+
+**Architecture Benefits:**
+- Secure password storage with bcrypt
+- Stateless authentication with JWT
+- Portfolio-friendly: recruiters can view without login
+- User ownership of graphs
+- Clean separation of public/protected endpoints
+
+---
+
 ### 📋 All Phases Complete!
 
-All 5 phases of InsightGraph have been successfully implemented:
+All 6 phases of InsightGraph have been successfully implemented:
 - ✅ Phase 1: LLM-Powered NER (Gemini integration)
 - ✅ Phase 2: Rate Limiting & Request Queuing (Redis)
 - ✅ Phase 3: Database Persistence (PostgreSQL + Alembic)
 - ✅ Phase 4: Frontend Visualization (React + TypeScript)
 - ✅ Phase 5: Semantic Search (pgvector + Gemini embeddings)
+- ✅ Phase 6: JWT Authentication (public read, protected write)
+
+### 🚀 Planned Enhancements
+
+Future improvements for portfolio value:
+- [ ] **Graph Export** - Download as PNG/SVG/JSON/PDF
+- [ ] **Dark Mode** - Theme toggle with system preference detection
+- [ ] **Mobile Responsive** - Touch-friendly graph interactions
+- [ ] **Production Deployment** - Deploy to Railway/Vercel with custom domain
 
 ---
 
