@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     # Redis Configuration (Phase 2)
     redis_url: str = "redis://localhost:6379"
 
+    # Production Configuration
+    frontend_url: str = "http://localhost:5173"  # Override in production
+    environment: str = "development"  # development, staging, production
+
     # Model configuration
     model_config = SettingsConfigDict(
         env_file="../.env",  # Load from project root (parent directory)

@@ -4,6 +4,159 @@
 
 This guide covers deploying InsightGraph to production environments following industry best practices.
 
+---
+
+## Quick Deploy (Free Tier) - Recommended
+
+Deploy InsightGraph for **$0/month** using:
+- **Frontend**: Vercel (instant, no cold starts)
+- **Backend**: Render (750 free hours/month)
+- **Database**: Neon (PostgreSQL with pgvector)
+- **Redis**: Upstash (10K commands/day)
+- **Monitoring**: UptimeRobot (keeps backend awake)
+
+### Step 1: Create Free Accounts (5 minutes)
+
+Sign up with GitHub at:
+1. **Neon** - https://neon.tech (PostgreSQL)
+2. **Upstash** - https://upstash.com (Redis)
+3. **Render** - https://render.com (Backend)
+4. **Vercel** - https://vercel.com (Frontend)
+5. **UptimeRobot** - https://uptimerobot.com (Monitoring)
+
+### Step 2: Set Up Neon Database (3 minutes)
+
+1. Go to https://console.neon.tech
+2. Click **"New Project"**
+3. Name: `insightgraph`, Region: `US East`
+4. Click **"Create Project"**
+5. Copy the connection string (looks like):
+   ```
+   postgresql://user:pass@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+   ```
+6. **Enable pgvector**:
+   - Go to **SQL Editor** in Neon dashboard
+   - Run: `CREATE EXTENSION IF NOT EXISTS vector;`
+
+### Step 3: Set Up Upstash Redis (2 minutes)
+
+1. Go to https://console.upstash.com
+2. Click **"Create Database"**
+3. Name: `insightgraph`, Region: `US East 1`
+4. Click **"Create"**
+5. Copy the **REST URL** (looks like):
+   ```
+   rediss://default:xxx@xxx.upstash.io:6379
+   ```
+
+### Step 4: Deploy Backend to Render (5 minutes)
+
+1. Go to https://dashboard.render.com
+2. Click **"New" → "Web Service"**
+3. Connect your GitHub repo: `sarikamohan123/insightgraph`
+4. Configure:
+   - **Name**: `insightgraph-api`
+   - **Region**: `Oregon (US West)`
+   - **Branch**: `main`
+   - **Root Directory**: `backend`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
+   - **Plan**: `Free`
+
+5. Add Environment Variables (click "Advanced" → "Add Environment Variable"):
+   ```
+   GEMINI_API_KEY=your_gemini_api_key
+   DATABASE_URL=postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require
+   REDIS_URL=rediss://default:xxx@xxx.upstash.io:6379
+   JWT_SECRET_KEY=<generate with: openssl rand -hex 32>
+   FRONTEND_URL=https://insightgraph.vercel.app
+   USE_LLM_EXTRACTOR=true
+   ENVIRONMENT=production
+   ```
+
+6. Click **"Create Web Service"**
+7. Wait for deployment (~3-5 minutes)
+8. Note your backend URL: `https://insightgraph-api.onrender.com`
+
+### Step 5: Run Database Migrations
+
+After Render deploys, run migrations:
+
+1. In Render dashboard, go to your service
+2. Click **"Shell"** tab
+3. Run:
+   ```bash
+   cd backend
+   alembic upgrade head
+   ```
+
+### Step 6: Deploy Frontend to Vercel (3 minutes)
+
+1. Go to https://vercel.com/new
+2. Import your GitHub repo: `sarikamohan123/insightgraph`
+3. Configure:
+   - **Framework Preset**: `Vite`
+   - **Root Directory**: `frontend`
+4. Add Environment Variable:
+   ```
+   VITE_API_URL=https://insightgraph-api.onrender.com
+   ```
+5. Click **"Deploy"**
+6. Wait for deployment (~1-2 minutes)
+7. Note your frontend URL: `https://insightgraph.vercel.app`
+
+### Step 7: Update Backend CORS
+
+Go back to Render and update:
+```
+FRONTEND_URL=https://insightgraph.vercel.app
+```
+(Use your actual Vercel URL)
+
+### Step 8: Set Up UptimeRobot (2 minutes)
+
+1. Go to https://uptimerobot.com
+2. Click **"Add New Monitor"**
+3. Configure:
+   - **Monitor Type**: `HTTP(s)`
+   - **Friendly Name**: `InsightGraph API`
+   - **URL**: `https://insightgraph-api.onrender.com/health`
+   - **Monitoring Interval**: `5 minutes`
+4. Click **"Create Monitor"**
+
+This keeps your backend awake 24/7!
+
+### Step 9: Test Your Deployment
+
+1. Visit your frontend: `https://insightgraph.vercel.app`
+2. Create an account
+3. Create a test graph
+4. Verify dark mode and mobile responsive work
+5. Test export functionality
+
+### Troubleshooting
+
+**Backend shows 502/503 error**:
+- Wait 30 seconds (cold start on first request)
+- Check Render logs for errors
+- Verify environment variables are set
+
+**Database connection failed**:
+- Verify DATABASE_URL has `?sslmode=require`
+- Check Neon dashboard for connection issues
+
+**CORS errors in browser**:
+- Verify FRONTEND_URL matches your Vercel URL exactly
+- Redeploy backend after changing FRONTEND_URL
+
+**"Tables not found" error**:
+- Run migrations: `alembic upgrade head` in Render Shell
+
+---
+
+## Traditional Deployment (Self-Hosted)
+
 ## Prerequisites
 
 - Python 3.11+

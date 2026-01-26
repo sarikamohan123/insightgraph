@@ -1,0 +1,31 @@
+# Render Blueprint - Infrastructure as Code
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: insightgraph-api
+    runtime: python
+    region: oregon  # Free tier available
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    healthCheckPath: /health
+    envVars:
+      # Required - Set these in Render Dashboard
+      - key: GEMINI_API_KEY
+        sync: false  # Must be set manually (secret)
+      - key: DATABASE_URL
+        sync: false  # Will be set from Neon
+      - key: REDIS_URL
+        sync: false  # Will be set from Upstash
+      - key: JWT_SECRET_KEY
+        generateValue: true  # Auto-generate secure secret
+      - key: FRONTEND_URL
+        sync: false  # Will be set after Vercel deployment
+      # Optional with defaults
+      - key: USE_LLM_EXTRACTOR
+        value: "true"
+      - key: ENVIRONMENT
+        value: "production"
