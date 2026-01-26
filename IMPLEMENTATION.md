@@ -20,9 +20,9 @@
 
 ---
 
-## Current Status: Phase 6 - JWT Authentication ✅ COMPLETED!
+## Current Status: All Phases + Enhancements Complete! 🎉
 
-**Last Updated:** 2026-01-21
+**Last Updated:** 2026-01-26
 
 ### ✅ Completed (Phase 2 - Rate Limiting & Request Queuing)
 **Completion Date:** 2026-01-10
@@ -489,13 +489,53 @@ All 6 phases of InsightGraph have been successfully implemented:
 - ✅ Phase 5: Semantic Search (pgvector + Gemini embeddings)
 - ✅ Phase 6: JWT Authentication (public read, protected write)
 
-### 🚀 Planned Enhancements
+### 🚀 Enhancements (Portfolio Value)
 
-Future improvements for portfolio value:
-- [ ] **Graph Export** - Download as PNG/SVG/JSON/PDF
-- [ ] **Dark Mode** - Theme toggle with system preference detection
-- [ ] **Mobile Responsive** - Touch-friendly graph interactions
-- [ ] **Production Deployment** - Deploy to Railway/Vercel with custom domain
+#### ✅ Graph Export (PR #2) - Completed 2026-01-25
+**Features:**
+- [x] Export as JSON (graph data with metadata)
+- [x] Export as PNG (canvas-based with title watermark)
+- [x] Export as SVG (vector format with styled nodes/edges)
+- [x] Export buttons in GraphVisualization component
+- [x] Auto-generated filenames from graph title
+
+**Files:**
+- `frontend/src/utils/exportGraph.ts` - Export utility functions
+- `frontend/src/components/GraphVisualization.tsx` - Export buttons
+
+#### ✅ Dark Mode (PR #3) - Completed 2026-01-26
+**Features:**
+- [x] ThemeContext for state management
+- [x] System preference detection (prefers-color-scheme)
+- [x] localStorage persistence
+- [x] Theme toggle button in header (sun/moon icons)
+- [x] CSS variables for all theme colors
+- [x] All components updated for theme support
+
+**Files:**
+- `frontend/src/contexts/ThemeContext.tsx` - Theme state management
+- `frontend/src/App.css` - CSS variables (light/dark themes)
+- All components updated to use CSS variables
+
+#### ✅ Mobile Responsive (PR #4) - Completed 2026-01-26
+**Features:**
+- [x] Responsive breakpoints (1024px, 768px, 480px)
+- [x] Flexible header with wrapping
+- [x] Hidden tagline on mobile
+- [x] Avatar-only user display on mobile
+- [x] Dynamic graph visualization sizing
+- [x] Larger touch targets (44px minimum)
+- [x] iOS zoom fix for inputs (16px font)
+- [x] Utility classes: .hide-mobile, .show-mobile
+
+**Files:**
+- `frontend/src/App.css` - Responsive media queries
+- `frontend/src/App.tsx` - Mobile-friendly header
+- `frontend/src/components/GraphVisualization.tsx` - Dynamic sizing
+
+### 📋 Remaining Enhancement
+
+- [ ] **Production Deployment** - Deploy to Railway/Vercel/Render with custom domain
 
 ---
 
