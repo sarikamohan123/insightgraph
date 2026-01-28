@@ -9,7 +9,9 @@ Configures Alembic migrations to work with:
 """
 
 import asyncio
+import ssl
 from logging.config import fileConfig
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from alembic import context
 
@@ -32,6 +34,22 @@ if config.config_file_name is not None:
 database_url = settings.database_url
 if database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
+# asyncpg doesn't understand sslmode query param - strip it
+connect_args = {}
+if database_url:
+    parsed = urlsplit(database_url)
+    query_params = parse_qs(parsed.query)
+    if "sslmode" in query_params:
+        query_params.pop("sslmode")
+        query_params.pop("channel_binding", None)
+        new_query = urlencode(query_params, doseq=True)
+        database_url = urlunsplit(parsed._replace(query=new_query))
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = ssl_ctx
+
 config.set_main_option("sqlalchemy.url", database_url)
 
 # Add your model's MetaData for autogenerate support
@@ -74,6 +92,7 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
