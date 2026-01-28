@@ -155,8 +155,17 @@ async def startup_event():
         if db_ready:
             print("Database: Connected and ready")
         else:
-            print("Database: Connected but schema missing")
-            print("         Run: alembic upgrade head")
+            print("Database: Connected but schema missing, running migrations...")
+            import subprocess
+            result = subprocess.run(
+                ["alembic", "upgrade", "head"],
+                capture_output=True, text=True,
+            )
+            if result.returncode == 0:
+                print("Database: Migrations completed successfully")
+                print(result.stdout)
+            else:
+                print(f"Database: Migration failed - {result.stderr}")
     except Exception as e:
         print(f"Database: Connection failed - {e}")
         print("         Check DATABASE_URL in .env")
