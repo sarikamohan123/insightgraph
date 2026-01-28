@@ -27,11 +27,30 @@ database_url = settings.database_url
 if database_url and database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
+# asyncpg doesn't understand sslmode query param - strip it and use connect_args instead
+import ssl
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
+
+connect_args = {}
+if database_url:
+    parsed = urlsplit(database_url)
+    query_params = parse_qs(parsed.query)
+    if "sslmode" in query_params:
+        query_params.pop("sslmode")
+        query_params.pop("channel_binding", None)
+        new_query = urlencode(query_params, doseq=True)
+        database_url = urlunsplit(parsed._replace(query=new_query))
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        connect_args["ssl"] = ssl_ctx
+
 engine = create_async_engine(
     database_url,
     echo=False,  # Set to True for SQL query logging (useful for debugging)
     pool_size=10,  # Connection pool size
     max_overflow=20,  # Max connections beyond pool_size
+    connect_args=connect_args,
 )
 
 # Session factory
