@@ -35,16 +35,21 @@ database_url = settings.database_url
 if database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-# asyncpg doesn't understand sslmode query param - strip it
+# asyncpg doesn't understand sslmode query param - strip it and all other
+# non-asyncpg params, then pass SSL via connect_args instead
 connect_args = {}
 if database_url:
     parsed = urlsplit(database_url)
     query_params = parse_qs(parsed.query)
-    if "sslmode" in query_params:
-        query_params.pop("sslmode")
-        query_params.pop("channel_binding", None)
-        new_query = urlencode(query_params, doseq=True)
-        database_url = urlunsplit(parsed._replace(query=new_query))
+    # Remove params that asyncpg doesn't understand
+    needs_ssl = False
+    for param in ["sslmode", "channel_binding"]:
+        if param in query_params:
+            query_params.pop(param)
+            needs_ssl = True
+    new_query = urlencode(query_params, doseq=True)
+    database_url = urlunsplit(parsed._replace(query=new_query))
+    if needs_ssl:
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE

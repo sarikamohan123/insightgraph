@@ -55,7 +55,7 @@ Sign up with GitHub at:
 2. Click **"New" → "Web Service"**
 3. Connect your GitHub repo: `sarikamohan123/insightgraph`
 4. Configure:
-   - **Name**: `insightgraph-api`
+   - **Name**: `insightgraph`
    - **Region**: `Oregon (US West)`
    - **Branch**: `main`
    - **Root Directory**: `backend`
@@ -77,7 +77,7 @@ Sign up with GitHub at:
 
 6. Click **"Create Web Service"**
 7. Wait for deployment (~3-5 minutes)
-8. Note your backend URL: `https://insightgraph-api.onrender.com`
+8. Note your backend URL: `https://insightgraph.onrender.com`
 
 ### Step 5: Run Database Migrations
 
@@ -100,7 +100,7 @@ After Render deploys, run migrations:
    - **Root Directory**: `frontend`
 4. Add Environment Variable:
    ```
-   VITE_API_URL=https://insightgraph-api.onrender.com
+   VITE_API_URL=https://insightgraph.onrender.com
    ```
 5. Click **"Deploy"**
 6. Wait for deployment (~1-2 minutes)
@@ -121,7 +121,7 @@ FRONTEND_URL=https://insightgraph.vercel.app
 3. Configure:
    - **Monitor Type**: `HTTP(s)`
    - **Friendly Name**: `InsightGraph API`
-   - **URL**: `https://insightgraph-api.onrender.com/health`
+   - **URL**: `https://insightgraph.onrender.com/health`
    - **Monitoring Interval**: `5 minutes`
 4. Click **"Create Monitor"**
 

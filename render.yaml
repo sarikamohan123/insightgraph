@@ -4,7 +4,7 @@
 services:
   # Backend API Service
   - type: web
-    name: insightgraph-api
+    name: insightgraph
     runtime: python
     region: oregon  # Free tier available
     plan: free
