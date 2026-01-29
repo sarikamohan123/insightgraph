@@ -14,13 +14,14 @@ All feature endpoints are organized in routers/:
 - routers/graphs.py - /graphs CRUD endpoints
 """
 
+import sqlalchemy as sa
 from config import settings
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from middleware.rate_limiter import get_rate_limit_status
 from routers import auth, extraction, graphs, jobs
 from services.cache_service import cache_service
-from services.db_service import check_db_connection, close_db
+from services.db_service import check_db_connection, close_db, engine
 from services.job_service import job_service
 from services.redis_service import redis_service
 
@@ -64,12 +65,26 @@ app.include_router(graphs.router)  # /graphs
 @app.get("/health", tags=["System"], summary="Health check", response_model=dict)
 async def health():
     """
-    Check if the API is running.
+    Check if the API is running and services are reachable.
+
+    Pings the database to keep Neon free tier from sleeping.
 
     Returns:
-        Simple status message
+        Status of API and connected services
     """
-    return {"status": "ok", "extractor": "LLM" if settings.use_llm_extractor else "Rule-based"}
+    db_ok = False
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(sa.text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        pass
+
+    return {
+        "status": "ok",
+        "extractor": "LLM" if settings.use_llm_extractor else "Rule-based",
+        "database": "connected" if db_ok else "unavailable",
+    }
 
 
 # Rate limit status endpoint
