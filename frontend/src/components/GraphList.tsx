@@ -76,9 +76,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
     }
   }, [searchQuery, searchMode]);
 
+  // Re-fetch graphs when auth state changes (login/logout)
   useEffect(() => {
     loadGraphs();
-  }, [loadGraphs, refreshTrigger]);
+  }, [loadGraphs, refreshTrigger, isAuthenticated]);
 
   const handleDeleteClick = (graph: Graph, e: React.MouseEvent) => {
     e.stopPropagation();
