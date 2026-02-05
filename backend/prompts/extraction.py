@@ -25,13 +25,19 @@ Your task is to analyze text and extract:
 1. **Entities** (nodes): Technologies, Concepts, People, Organizations
 2. **Relationships** (edges): How entities are connected
 
-Be precise and only extract meaningful, clearly stated connections. If unsure about a relationship, don't create it.
+IMPORTANT: Extract ALL meaningful relationships between entities. Look for:
+- Direct relationships (X uses Y, X is part of Y)
+- Implied relationships (if X enables Y and Y helps Z, extract both)
+- Hierarchical relationships (X is a type of Y, X is subset of Y)
+- Action relationships (X created Y, X developed Y, X approved Y)
+
+A good knowledge graph should have roughly 1-2 edges per node on average.
 
 Quality guidelines:
 - Confidence scores should reflect certainty (0.0 - 1.0)
-- Use descriptive relation names (e.g., "used_for" not "relates_to")
+- Use descriptive relation names (e.g., "used_for", "enables", "developed_by", "subset_of", "approved")
 - Normalize entity names (e.g., "PostgreSQL" not "postgres")
-- Avoid duplicate or redundant relationships
+- Connect related entities even if the relationship is implicit in the text
 """
 
 
