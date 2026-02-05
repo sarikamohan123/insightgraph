@@ -102,6 +102,16 @@ export const deleteGraph = async (id: string): Promise<void> => {
 };
 
 /**
+ * Update graph visibility (public/private)
+ */
+export const updateGraphVisibility = async (id: string, isPublic: boolean): Promise<Graph> => {
+  const response = await apiClient.patch<Graph>(`/graphs/${id}/visibility`, {
+    is_public: isPublic,
+  });
+  return response.data;
+};
+
+/**
  * Search graphs by text content (keyword or semantic)
  */
 export const searchGraphs = async (

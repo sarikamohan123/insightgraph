@@ -139,10 +139,31 @@ body {
    Header
    ===================================================== */
 .header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
   color: white;
-  padding: 2rem 1rem;
-  box-shadow: 0 2px 4px var(--shadow-color);
+  padding: 1.5rem 1rem;
+  box-shadow: 0 4px 6px var(--shadow-color);
+  /* Glass morphism effect */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  background: linear-gradient(
+    135deg,
+    rgba(102, 126, 234, 0.95) 0%,
+    rgba(118, 75, 162, 0.95) 100%
+  );
+}
+
+:root.dark .header {
+  background: linear-gradient(
+    135deg,
+    rgba(76, 29, 149, 0.95) 0%,
+    rgba(91, 33, 182, 0.95) 100%
+  );
 }
 
 .header-content {
@@ -168,6 +189,7 @@ body {
 .main {
   flex: 1;
   padding: 2rem 1rem;
+  padding-top: calc(2rem + 100px); /* Offset for fixed header */
 }
 
 .container {
@@ -208,7 +230,7 @@ body {
 
 .section.sticky {
   position: sticky;
-  top: 2rem;
+  top: calc(100px + 1rem); /* Account for fixed header */
 }
 
 .section h2 {
@@ -279,7 +301,7 @@ body {
    ===================================================== */
 @media (max-width: 768px) {
   .header {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
   }
 
   .header h1 {
@@ -304,6 +326,7 @@ body {
 
   .main {
     padding: 1rem 0.5rem;
+    padding-top: calc(1rem + 120px); /* Adjusted for mobile header */
   }
 
   .section {
@@ -336,7 +359,7 @@ body {
    ===================================================== */
 @media (max-width: 480px) {
   .header {
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
   }
 
   .header h1 {
@@ -349,6 +372,7 @@ body {
 
   .main {
     padding: 0.75rem 0.5rem;
+    padding-top: calc(0.75rem + 130px); /* Adjusted for small mobile header */
   }
 
   .section {

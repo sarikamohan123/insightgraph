@@ -45,6 +45,8 @@ export interface Graph {
   source_text: string;
   nodes: GraphNode[];
   edges: GraphEdge[];
+  is_public: boolean;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -60,6 +62,7 @@ export interface CreateGraphRequest {
   text: string;
   title?: string;
   description?: string;
+  is_public?: boolean;
 }
 
 // For react-force-graph

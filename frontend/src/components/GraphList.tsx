@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { listGraphs, searchGraphs, deleteGraph } from '../services/api';
+import { listGraphs, searchGraphs, deleteGraph, updateGraphVisibility } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import type { Graph, SearchMode } from '../types';
 
 interface GraphListProps {
@@ -23,8 +24,16 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
   const [total, setTotal] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
+  const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const { user, isAuthenticated } = useAuth();
+
+  // Check if current user owns a graph
+  const isOwner = (graph: Graph) => {
+    return isAuthenticated && user && graph.user_id === user.id;
+  };
 
   // Debounce input changes - wait 300ms after user stops typing
   useEffect(() => {
@@ -90,6 +99,21 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       } else {
         setError(err.response?.data?.detail || 'Failed to delete graph');
       }
+    }
+  };
+
+  const handleToggleVisibility = async (graph: Graph, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isOwner(graph)) return;
+
+    try {
+      setTogglingVisibility(graph.id);
+      await updateGraphVisibility(graph.id, !graph.is_public);
+      await loadGraphs(); // Refresh list
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to update visibility');
+    } finally {
+      setTogglingVisibility(null);
     }
   };
 
@@ -200,9 +224,26 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                 <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>
-                    {graph.title || 'Untitled Graph'}
-                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.125rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      {graph.title || 'Untitled Graph'}
+                    </h3>
+                    {/* Visibility Badge */}
+                    <span
+                      style={{
+                        padding: '0.125rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.625rem',
+                        fontWeight: '500',
+                        textTransform: 'uppercase',
+                        backgroundColor: graph.is_public ? 'var(--success-bg)' : 'var(--bg-tertiary)',
+                        color: graph.is_public ? 'var(--success-text)' : 'var(--text-muted)',
+                        border: `1px solid ${graph.is_public ? 'var(--success-border)' : 'var(--border-color)'}`,
+                      }}
+                    >
+                      {graph.is_public ? 'Public' : 'Private'}
+                    </span>
+                  </div>
                   <p style={{ margin: '0 0 0.5rem 0', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
                     {graph.source_text.substring(0, 150)}
                     {graph.source_text.length > 150 ? '...' : ''}
@@ -213,27 +254,50 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
                     <span>{new Date(graph.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => handleDeleteClick(graph, e)}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    backgroundColor: 'var(--error-bg)',
-                    color: 'var(--error-text)',
-                    border: 'none',
-                    borderRadius: '0.375rem',
-                    fontSize: '0.875rem',
-                    cursor: 'pointer',
-                    marginLeft: '1rem',
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--error-border)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = 'var(--error-bg)';
-                  }}
-                >
-                  Delete
-                </button>
+                {/* Action buttons - only for owner */}
+                {isOwner(graph) && (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginLeft: '1rem' }}>
+                    {/* Toggle Visibility Button */}
+                    <button
+                      onClick={(e) => handleToggleVisibility(graph, e)}
+                      disabled={togglingVisibility === graph.id}
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        backgroundColor: 'var(--bg-tertiary)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        cursor: togglingVisibility === graph.id ? 'not-allowed' : 'pointer',
+                        opacity: togglingVisibility === graph.id ? 0.6 : 1,
+                      }}
+                      title={graph.is_public ? 'Make private' : 'Make public'}
+                    >
+                      {togglingVisibility === graph.id ? '...' : (graph.is_public ? 'Make Private' : 'Make Public')}
+                    </button>
+                    {/* Delete Button */}
+                    <button
+                      onClick={(e) => handleDeleteClick(graph, e)}
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        backgroundColor: 'var(--error-bg)',
+                        color: 'var(--error-text)',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--error-border)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--error-bg)';
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}

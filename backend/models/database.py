@@ -69,6 +69,9 @@ class Graph(Base):
     # Nullable for backward compatibility with existing graphs
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
 
+    # Public visibility flag - if True, graph is visible to everyone
+    is_public = Column(Boolean, default=False, nullable=False)
+
     # Semantic search embedding (Phase 5)
     # 768 dimensions for Gemini embedding-001 model
     embedding = Column(Vector(768), nullable=True)

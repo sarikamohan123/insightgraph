@@ -17,6 +17,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
   const [text, setText] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -33,6 +34,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
         text: text.trim(),
         ...(title.trim() && { title: title.trim() }),
         ...(description.trim() && { description: description.trim() }),
+        is_public: isPublic,
       };
 
       await onSubmit(request);
@@ -41,6 +43,7 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
       setText('');
       setTitle('');
       setDescription('');
+      setIsPublic(false);
     } catch (err: any) {
       setError(err.response?.data?.detail || err.message || 'Failed to create graph');
     }
@@ -147,6 +150,34 @@ export const GraphForm: React.FC<GraphFormProps> = ({ onSubmit, loading = false 
             color: 'var(--text-primary)',
           }}
         />
+      </div>
+
+      <div style={{ marginBottom: '1rem' }}>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            cursor: 'pointer',
+            color: 'var(--text-secondary)',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
+            disabled={loading}
+            style={{
+              width: '1rem',
+              height: '1rem',
+              cursor: 'pointer',
+            }}
+          />
+          <span style={{ fontWeight: '500' }}>Make this graph public</span>
+        </label>
+        <p style={{ marginTop: '0.25rem', fontSize: '0.875rem', color: 'var(--text-muted)', marginLeft: '1.5rem' }}>
+          Public graphs are visible to everyone. Private graphs are only visible to you.
+        </p>
       </div>
 
       {error && (

@@ -24,7 +24,7 @@ from uuid import UUID
 
 from models.database import Edge, Graph, Node
 from schemas import ExtractResponse
-from sqlalchemy import desc, select
+from sqlalchemy import desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
@@ -52,6 +52,7 @@ class GraphRepository:
         description: str | None = None,
         embedding: list[float] | None = None,
         user_id: UUID | None = None,
+        is_public: bool = False,
     ) -> Graph:
         """
         Save an extracted knowledge graph to database.
@@ -63,6 +64,7 @@ class GraphRepository:
             description: Optional graph description
             embedding: Optional semantic embedding (768 dimensions)
             user_id: Optional owner's user ID (Phase 6)
+            is_public: Whether graph is publicly visible (default False)
 
         Returns:
             Saved Graph object with ID and timestamps
@@ -74,6 +76,7 @@ class GraphRepository:
             source_text=source_text,
             embedding=embedding,
             user_id=user_id,
+            is_public=is_public,
             graph_metadata={
                 "node_count": len(extract_result.nodes),
                 "edge_count": len(extract_result.edges),
@@ -159,6 +162,106 @@ class GraphRepository:
             await self.session.refresh(graph, ["nodes", "edges"])
 
         return list(graphs)
+
+    async def list_public_graphs(self, limit: int = 50, offset: int = 0) -> list[Graph]:
+        """
+        Get only public graphs (for unauthenticated users).
+
+        Args:
+            limit: Max number of graphs to return
+            offset: Number of graphs to skip
+
+        Returns:
+            List of public Graph objects (newest first)
+        """
+        result = await self.session.execute(
+            select(Graph)
+            .where(Graph.is_public == True)
+            .order_by(desc(Graph.created_at))
+            .limit(limit)
+            .offset(offset)
+        )
+        graphs = result.scalars().all()
+
+        for graph in graphs:
+            await self.session.refresh(graph, ["nodes", "edges"])
+
+        return list(graphs)
+
+    async def list_graphs_for_user(
+        self, user_id: UUID, limit: int = 50, offset: int = 0
+    ) -> list[Graph]:
+        """
+        Get graphs visible to a specific user (public + own graphs).
+
+        Args:
+            user_id: ID of the authenticated user
+            limit: Max number of graphs to return
+            offset: Number of graphs to skip
+
+        Returns:
+            List of Graph objects (newest first)
+        """
+        result = await self.session.execute(
+            select(Graph)
+            .where(or_(Graph.is_public == True, Graph.user_id == user_id))
+            .order_by(desc(Graph.created_at))
+            .limit(limit)
+            .offset(offset)
+        )
+        graphs = result.scalars().all()
+
+        for graph in graphs:
+            await self.session.refresh(graph, ["nodes", "edges"])
+
+        return list(graphs)
+
+    async def get_public_graph_count(self) -> int:
+        """
+        Get total number of public graphs.
+
+        Returns:
+            Count of public graphs
+        """
+        result = await self.session.execute(
+            select(Graph).where(Graph.is_public == True)
+        )
+        return len(result.scalars().all())
+
+    async def get_graph_count_for_user(self, user_id: UUID) -> int:
+        """
+        Get total number of graphs visible to a user.
+
+        Returns:
+            Count of public graphs + user's own graphs
+        """
+        result = await self.session.execute(
+            select(Graph).where(or_(Graph.is_public == True, Graph.user_id == user_id))
+        )
+        return len(result.scalars().all())
+
+    async def update_graph_visibility(self, graph_id: UUID, is_public: bool) -> Graph | None:
+        """
+        Update the visibility of a graph.
+
+        Args:
+            graph_id: UUID of the graph to update
+            is_public: New visibility status
+
+        Returns:
+            Updated Graph object if found, None otherwise
+        """
+        result = await self.session.execute(select(Graph).where(Graph.id == graph_id))
+        graph = result.scalar_one_or_none()
+
+        if not graph:
+            return None
+
+        graph.is_public = is_public
+        await self.session.commit()
+        await self.session.refresh(graph, ["nodes", "edges"])
+
+        return graph
 
     async def delete_graph(self, graph_id: UUID) -> bool:
         """

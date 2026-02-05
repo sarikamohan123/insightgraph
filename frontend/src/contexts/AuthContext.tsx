@@ -27,24 +27,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Check authentication status
+  const checkAuth = useCallback(async (isInitialCheck = false) => {
+    const token = getJwtToken();
+    if (token) {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+      } catch {
+        // Token invalid or expired
+        apiLogout();
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+    if (isInitialCheck) {
+      setLoading(false);
+    }
+  }, []);
+
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const token = getJwtToken();
-      if (token) {
-        try {
-          const currentUser = await getCurrentUser();
-          setUser(currentUser);
-        } catch {
-          // Token invalid or expired
-          apiLogout();
-        }
+    checkAuth(true);
+  }, [checkAuth]);
+
+  // Periodic token validation (every 5 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    const intervalId = setInterval(() => {
+      checkAuth();
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearInterval(intervalId);
+  }, [user, checkAuth]);
+
+  // Re-validate when tab regains focus
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && getJwtToken()) {
+        checkAuth();
       }
-      setLoading(false);
     };
 
-    checkAuth();
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [checkAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true);

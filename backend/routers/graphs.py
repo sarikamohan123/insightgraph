@@ -27,6 +27,7 @@ from models.graph_schemas import (
     GraphCreateRequest,
     GraphListResponse,
     GraphResponse,
+    GraphVisibilityUpdate,
     NodeResponse,
     SearchMode,
     SemanticSearchResponse,
@@ -128,6 +129,7 @@ async def create_graph(
             description=req.description,
             embedding=embedding,
             user_id=current_user.id,
+            is_public=req.is_public,
         )
 
         return GraphResponse(
@@ -154,6 +156,8 @@ async def create_graph(
                 )
                 for edge in graph.edges
             ],
+            is_public=graph.is_public,
+            user_id=graph.user_id,
             created_at=graph.created_at,
             updated_at=graph.updated_at,
         )
@@ -169,23 +173,28 @@ async def create_graph(
 @router.get(
     "",
     response_model=GraphListResponse,
-    summary="List all knowledge graphs",
+    summary="List knowledge graphs",
     responses={
         200: {"description": "List of graphs retrieved successfully"},
     },
 )
 async def list_graphs(
     repo: Annotated[GraphRepository, Depends(get_graph_repository)],
+    current_user: Annotated[User | None, Depends(get_current_user)],
     limit: int = Query(50, ge=1, le=100, description="Max results per page"),
     offset: int = Query(0, ge=0, description="Number of results to skip"),
 ):
     """
-    Get all knowledge graphs with pagination.
+    Get knowledge graphs with pagination.
+
+    - Unauthenticated users: Only see public graphs
+    - Authenticated users: See public graphs + their own private graphs
 
     Returns graphs ordered by creation date (newest first).
 
     Args:
         repo: Injected graph repository
+        current_user: Optional authenticated user
         limit: Max results (1-100)
         offset: Skip N results
 
@@ -193,8 +202,16 @@ async def list_graphs(
         List of graphs with pagination info
     """
     try:
-        graphs = await repo.list_graphs(limit=limit, offset=offset)
-        total = await repo.get_graph_count()
+        if current_user:
+            # Authenticated: show public + own graphs
+            graphs = await repo.list_graphs_for_user(
+                user_id=current_user.id, limit=limit, offset=offset
+            )
+            total = await repo.get_graph_count_for_user(current_user.id)
+        else:
+            # Unauthenticated: show only public graphs
+            graphs = await repo.list_public_graphs(limit=limit, offset=offset)
+            total = await repo.get_public_graph_count()
 
         return GraphListResponse(
             graphs=graphs,
@@ -318,6 +335,97 @@ async def delete_graph(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete graph: {str(e)[:200]}",
+        ) from e
+
+
+@router.patch(
+    "/{graph_id}/visibility",
+    response_model=GraphResponse,
+    summary="Toggle graph visibility",
+    responses={
+        200: {"description": "Graph visibility updated"},
+        401: {"description": "Authentication required"},
+        403: {"description": "Not authorized to modify this graph"},
+        404: {"description": "Graph not found"},
+    },
+)
+async def update_graph_visibility(
+    graph_id: UUID,
+    req: GraphVisibilityUpdate,
+    repo: Annotated[GraphRepository, Depends(get_graph_repository)],
+    current_user: Annotated[User, Depends(require_current_user)],
+):
+    """
+    Update the visibility of a graph (public/private).
+
+    Only the graph owner can change visibility.
+
+    Args:
+        graph_id: UUID of the graph to update
+        req: New visibility status
+        repo: Injected graph repository
+        current_user: Authenticated user
+
+    Returns:
+        Updated graph
+    """
+    try:
+        # Check if graph exists
+        graph = await repo.get_graph(graph_id)
+
+        if not graph:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Graph {graph_id} not found",
+            )
+
+        # Check ownership
+        if graph.user_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to modify this graph",
+            )
+
+        # Update visibility
+        updated_graph = await repo.update_graph_visibility(graph_id, req.is_public)
+
+        return GraphResponse(
+            id=updated_graph.id,
+            title=updated_graph.title,
+            description=updated_graph.description,
+            source_text=updated_graph.source_text,
+            nodes=[
+                NodeResponse(
+                    id=node.id,
+                    node_id=node.node_id,
+                    label=node.label,
+                    type=node.type,
+                    confidence=node.confidence,
+                )
+                for node in updated_graph.nodes
+            ],
+            edges=[
+                EdgeResponse(
+                    id=edge.id,
+                    source_node_id=edge.source_node_id,
+                    target_node_id=edge.target_node_id,
+                    relation=edge.relation,
+                )
+                for edge in updated_graph.edges
+            ],
+            is_public=updated_graph.is_public,
+            user_id=updated_graph.user_id,
+            created_at=updated_graph.created_at,
+            updated_at=updated_graph.updated_at,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[ERROR] Failed to update graph visibility: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update visibility: {str(e)[:200]}",
         ) from e
 
 

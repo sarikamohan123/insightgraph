@@ -59,6 +59,8 @@ class GraphResponse(BaseModel):
     source_text: str = Field(..., description="Original input text")
     nodes: list[NodeResponse] = Field(default_factory=list, description="Extracted entities")
     edges: list[EdgeResponse] = Field(default_factory=list, description="Relationships")
+    is_public: bool = Field(default=False, description="Whether graph is publicly visible")
+    user_id: UUID | None = Field(None, description="Owner user ID")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -87,6 +89,13 @@ class GraphCreateRequest(BaseModel):
     )
     title: str | None = Field(None, description="Optional title for the graph", max_length=255)
     description: str | None = Field(None, description="Optional description", max_length=1000)
+    is_public: bool = Field(default=False, description="Make graph publicly visible")
+
+
+class GraphVisibilityUpdate(BaseModel):
+    """Request model for updating graph visibility."""
+
+    is_public: bool = Field(..., description="New visibility status")
 
 
 # =========================================================================
