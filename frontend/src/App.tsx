@@ -5,26 +5,49 @@
  * InsightGraph - Knowledge Graph Visualization
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { GraphVisualization } from './components/GraphVisualization';
 import { GraphForm } from './components/GraphForm';
 import { GraphList } from './components/GraphList';
 import { AuthModal } from './components/AuthModal';
+import { LandingPage } from './components/LandingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { createGraph } from './services/api';
 import type { Graph, CreateGraphRequest } from './types';
 import './App.css';
+import './components/LandingPage.css';
 
 function AppContent() {
   const [selectedGraph, setSelectedGraph] = useState<Graph | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showLanding, setShowLanding] = useState(() => {
+    // Check if user has visited before
+    return !localStorage.getItem('insightgraph_visited');
+  });
 
   const { user, isAuthenticated, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+
+  // When user logs in, hide landing page
+  useEffect(() => {
+    if (isAuthenticated) {
+      setShowLanding(false);
+      localStorage.setItem('insightgraph_visited', 'true');
+    }
+  }, [isAuthenticated]);
+
+  const handleEnterApp = () => {
+    setShowLanding(false);
+    localStorage.setItem('insightgraph_visited', 'true');
+  };
+
+  const handleLoginFromLanding = () => {
+    setShowAuthModal(true);
+  };
 
   const handleCreateGraph = async (request: CreateGraphRequest) => {
     // Check if user is authenticated
@@ -52,6 +75,16 @@ function AppContent() {
   const handleSelectGraph = (graph: Graph) => {
     setSelectedGraph(graph);
   };
+
+  // Show landing page for first-time visitors
+  if (showLanding) {
+    return (
+      <>
+        <LandingPage onGetStarted={handleEnterApp} onLogin={handleLoginFromLanding} />
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      </>
+    );
+  }
 
   return (
     <div className="app">
