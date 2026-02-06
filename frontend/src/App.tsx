@@ -235,30 +235,10 @@ function AppContent() {
               borderRadius: '0.5rem',
               padding: '1rem',
               marginBottom: '1.5rem',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
             }}>
-              <span style={{ color: 'var(--warning-text)', flex: '1', minWidth: '200px' }}>
+              <span style={{ color: 'var(--warning-text)' }}>
                 Login to create and save your own knowledge graphs
               </span>
-              <button
-                onClick={() => setShowAuthModal(true)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--accent-primary)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                Login
-              </button>
             </div>
           )}
 

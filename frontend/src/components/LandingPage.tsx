@@ -47,7 +47,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </p>
           <div className="hero-ctas">
             <button className="btn-primary btn-large" onClick={onGetStarted}>
-              Start Creating Free
+              Start Creating
               <span className="btn-arrow">→</span>
             </button>
             <a href="#demo" className="btn-secondary btn-large">
@@ -62,7 +62,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             <div className="stat-divider" />
             <div className="stat">
               <span className="stat-number">100%</span>
-              <span className="stat-label">Free to Use</span>
+              <span className="stat-label">Easy to Use</span>
             </div>
             <div className="stat-divider" />
             <div className="stat">
@@ -260,7 +260,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           <h2>Ready to Unlock Your Insights?</h2>
           <p>Join now and start creating beautiful knowledge graphs in seconds.</p>
           <button className="btn-primary btn-large" onClick={onGetStarted}>
-            Get Started Free
+            Get Started
             <span className="btn-arrow">→</span>
           </button>
         </div>
