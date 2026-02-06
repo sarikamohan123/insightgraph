@@ -6,6 +6,7 @@
  */
 
 import { useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { GraphVisualization } from './components/GraphVisualization';
 import { GraphForm } from './components/GraphForm';
 import { GraphList } from './components/GraphList';
@@ -264,6 +265,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <AppContent />
+        <Analytics />
       </AuthProvider>
     </ThemeProvider>
   );
