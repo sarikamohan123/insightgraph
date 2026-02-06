@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { listGraphs, searchGraphs, deleteGraph, updateGraphVisibility } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { SkeletonGraphList } from './Skeleton';
 import type { Graph, SearchMode } from '../types';
 
 interface GraphListProps {
@@ -179,13 +180,16 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
         </div>
       )}
 
-      {/* Count / Loading */}
+      {/* Count */}
       <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-        {loading ? 'Searching...' : `${total} graph${total !== 1 ? 's' : ''} found`}
+        {loading ? 'Loading graphs...' : `${total} graph${total !== 1 ? 's' : ''} found`}
       </p>
 
-      {/* List */}
-      {!loading && graphs.length === 0 ? (
+      {/* Skeleton Loading State */}
+      {loading && <SkeletonGraphList count={3} />}
+
+      {/* Empty State */}
+      {!loading && graphs.length === 0 && (
         <div
           style={{
             textAlign: 'center',
@@ -200,7 +204,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
             Create your first graph using the form above.
           </p>
         </div>
-      ) : (
+      )}
+
+      {/* Graph List */}
+      {!loading && graphs.length > 0 && (
         <div style={{ display: 'grid', gap: '1rem' }}>
           {graphs.map((graph) => (
             <div
