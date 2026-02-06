@@ -26,8 +26,10 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
   const [total, setTotal] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; title: string } | null>(null);
   const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
+  const [loadingTime, setLoadingTime] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { user, isAuthenticated } = useAuth();
 
@@ -59,6 +61,12 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
     try {
       setLoading(true);
       setError(null);
+      setLoadingTime(0);
+
+      // Track loading time to show helpful message for cold starts
+      loadingTimerRef.current = setInterval(() => {
+        setLoadingTime(prev => prev + 1);
+      }, 1000);
 
       const response = searchQuery
         ? await searchGraphs(searchQuery, 20, searchMode)
@@ -70,6 +78,11 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
       setError(err.response?.data?.detail || err.message || 'Failed to load graphs');
     } finally {
       setLoading(false);
+      setLoadingTime(0);
+      if (loadingTimerRef.current) {
+        clearInterval(loadingTimerRef.current);
+        loadingTimerRef.current = null;
+      }
       // Restore focus to input if it was focused before
       if (wasInputFocused && inputRef.current) {
         inputRef.current.focus();
@@ -182,7 +195,11 @@ export const GraphList: React.FC<GraphListProps> = ({ onSelectGraph, refreshTrig
 
       {/* Count */}
       <p style={{ marginBottom: '1rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-        {loading ? 'Loading graphs...' : `${total} graph${total !== 1 ? 's' : ''} found`}
+        {loading ? (
+          loadingTime >= 3 ? 'Waking up server... (this may take a few seconds)' : 'Loading graphs...'
+        ) : (
+          `${total} graph${total !== 1 ? 's' : ''} found`
+        )}
       </p>
 
       {/* Skeleton Loading State */}

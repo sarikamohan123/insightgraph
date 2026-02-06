@@ -14,7 +14,7 @@ import { AuthModal } from './components/AuthModal';
 import { LandingPage } from './components/LandingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { createGraph } from './services/api';
+import { createGraph, healthCheck } from './services/api';
 import type { Graph, CreateGraphRequest } from './types';
 import './App.css';
 import './components/LandingPage.css';
@@ -25,24 +25,54 @@ function AppContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLanding, setShowLanding] = useState(() => {
-    // Check if user has visited before
+    // Check URL hash or if first visit
+    if (window.location.hash === '#app') return false;
     return !localStorage.getItem('insightgraph_visited');
   });
 
   const { user, isAuthenticated, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
 
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const isAppView = window.location.hash === '#app';
+      setShowLanding(!isAppView);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // When user logs in, hide landing page
   useEffect(() => {
     if (isAuthenticated) {
       setShowLanding(false);
       localStorage.setItem('insightgraph_visited', 'true');
+      if (window.location.hash !== '#app') {
+        window.history.pushState(null, '', '#app');
+      }
     }
   }, [isAuthenticated]);
 
+  // Pre-warm database when entering app (Neon cold start fix)
+  useEffect(() => {
+    if (!showLanding) {
+      // Ping health endpoint to wake up database
+      healthCheck().catch(() => {
+        // Silently ignore - this is just a warm-up call
+      });
+    }
+  }, [showLanding]);
+
   const handleEnterApp = () => {
+    // Push to browser history so back button works
+    window.history.pushState(null, '', '#app');
     setShowLanding(false);
     localStorage.setItem('insightgraph_visited', 'true');
+
+    // Pre-warm database
+    healthCheck().catch(() => {});
   };
 
   const handleLoginFromLanding = () => {
@@ -92,7 +122,16 @@ function AppContent() {
       <header className="header">
         <div className="header-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
           <div style={{ minWidth: '200px' }}>
-            <h1>InsightGraph</h1>
+            <h1
+              style={{ cursor: 'pointer' }}
+              onClick={() => {
+                window.history.pushState(null, '', '/');
+                setShowLanding(true);
+              }}
+              title="Back to Home"
+            >
+              InsightGraph
+            </h1>
             <p className="hide-mobile">Transform text into interactive knowledge graphs</p>
           </div>
           <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
