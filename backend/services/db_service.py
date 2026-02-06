@@ -48,8 +48,10 @@ if database_url:
 engine = create_async_engine(
     database_url,
     echo=False,  # Set to True for SQL query logging (useful for debugging)
-    pool_size=10,  # Connection pool size
-    max_overflow=20,  # Max connections beyond pool_size
+    pool_size=5,  # Reduced for serverless (Neon free tier has limits)
+    max_overflow=10,  # Max connections beyond pool_size
+    pool_pre_ping=True,  # Check if connection is alive before using (fixes stale connections)
+    pool_recycle=300,  # Recycle connections every 5 minutes (Neon can close idle connections)
     connect_args=connect_args,
 )
 
